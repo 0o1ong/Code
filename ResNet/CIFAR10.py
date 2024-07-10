@@ -3,6 +3,8 @@ from torch.utils.data import DataLoader
 
 def get_data_loaders(batch_size):
     transform = transforms.Compose([
+        transforms.RandomHorizontalFlip(), 
+        transforms.RandomCrop(32, padding=4),
         transforms.ToTensor()
     ])
 
