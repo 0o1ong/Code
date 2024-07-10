@@ -60,4 +60,4 @@ class ResNet(nn.Module):
         return x
 
 def get_model():
-    return ResNet(BasicBlock, [9, 9, 9])
+    return ResNet(BasicBlock, [18, 18, 18])
