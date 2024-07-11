@@ -17,7 +17,7 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, mo
     model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
-    writer = SummaryWriter(f'runs/{model_name}_{data_name}')
+    writer = SummaryWriter(f'{logdir}/{model_name}_{data_name}')
 
     best_val_acc = 0.0
 
