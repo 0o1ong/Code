@@ -14,7 +14,7 @@ class BasicBlock(nn.Module):
             nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(dim)
         )
-        self.downsample = nn.Sequential(nn.Conv2d(in_dim, dim, kernel_size=1)) if in_dim != dim else nn.Sequential()
+        self.downsample = nn.Conv2d(in_dim, dim, kernel_size=1) if in_dim != dim else nn.Sequential()
             
     def forward(self, x):
         return F.relu(self.residual(x) + self.downsample(x))
@@ -32,7 +32,7 @@ class PreActBlock(nn.Module):
             nn.ReLU(),
             nn.Conv2d(dim, dim, kernel_size=3, padding=1)
         )
-        self.downsample = nn.Sequential(nn.Conv2d(in_dim, dim, kernel_size=1)) if in_dim != dim else nn.Sequential()
+        self.downsample = nn.Conv2d(in_dim, dim, kernel_size=1) if in_dim != dim else nn.Sequential()
 
     def forward(self, x):
         return self.residual(x) + self.downsample(x)
