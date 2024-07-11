@@ -49,7 +49,8 @@ class ResNet(nn.Module):
         self.layer2 = self.stage(block, 128, block_num[1])
         self.layer3 = self.stage(block, 256, block_num[2])
         self.layer4 = self.stage(block, 512, block_num[3])
-        self.bn = nn.BatchNorm2d(512)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.bn2 = nn.BatchNorm2d(512)
         self.fc = nn.Linear(512, num_classes) 
 
     def stage(self, block, dim, num_blocks):
@@ -61,6 +62,9 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
+        if self.block == BasicBlock:
+            x = self.bn1(x)
+            x = F.relu(x)
         x = self.layer1(x)
         x = F.avg_pool2d(x, 2) # stride=2 -> pooling
         x = self.layer2(x)
@@ -70,7 +74,7 @@ class ResNet(nn.Module):
         x = self.layer4(x)
         # Pre-act의 경우 last residual block; extra activation
         if self.block == PreActBlock:
-            x = self.bn(x)
+            x = self.bn2(x)
             x = F.relu(x)
         x = F.avg_pool2d(x, 4)
         x = torch.flatten(x, 1)
@@ -78,4 +82,5 @@ class ResNet(nn.Module):
         return x
 
 def get_model():
-    return ResNet(PreActBlock, [2, 2, 2, 2]) 
+    return ResNet(BasicBlock, [2, 2, 2, 2])
+    # return ResNet(PreActBlock, [2, 2, 2, 2]) 
