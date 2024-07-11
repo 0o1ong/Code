@@ -22,7 +22,7 @@ def main():
 
     model = model_module.get_model()
     train_loader, test_loader = dataset_module.get_data_loaders(args.batch_size)  
-    train(model, train_loader, test_loader, args.epoch_num, args.learning_rate, args.logdir, args.model, args.dataset)
+    train(model, train_loader, test_loader, args.epoch_num, args.learning_rate, args.logdir)
 
 if __name__ == "__main__":
     main()
