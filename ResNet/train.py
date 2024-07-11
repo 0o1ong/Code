@@ -7,7 +7,7 @@ import os
 import time
 import logging
 
-def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, model_name, data_name):
+def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir):
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, 'training.log')),
         logging.StreamHandler()
@@ -17,7 +17,7 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, mo
     model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
-    writer = SummaryWriter(f'{logdir}/{model_name}_{data_name}')
+    writer = SummaryWriter(f'{logdir}')
 
     best_val_acc = 0.0
 
