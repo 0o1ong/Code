@@ -3,9 +3,10 @@ from torch.utils.data import DataLoader
 
 def get_data_loaders(batch_size):
     transform = transforms.Compose([
-        transforms.RandomHorizontalFlip(), 
-        transforms.RandomCrop(32, padding=4),
-        transforms.ToTensor()
+        transforms.RandomResizedCrop(32),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=0.5, std=0.5)
     ])
 
     train_set = datasets.CIFAR10('./data', train=True, download=True, transform=transform)
