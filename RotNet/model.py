@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Pre-train model
 class PreActBlock(nn.Module):
     def __init__(self, in_dim, dim, stride=1):
         super(PreActBlock, self).__init__()
@@ -22,6 +21,7 @@ class PreActBlock(nn.Module):
     def forward(self, x):
         return self.residual(x) + self.identity(x)
 
+# Pre-train model
 class ResNet(nn.Module):
     def __init__(self, block, block_num, num_classes=4):
         super(ResNet, self).__init__()
@@ -91,7 +91,7 @@ class FeatureExtractor(nn.Module):
         x = torch.flatten(x, 1)
         return x
     
-# 전이학습된 모델로부터 representation 
+# representation
 def extract_features(model, data_loader, device):
     model.eval()
     features = []
@@ -106,7 +106,7 @@ def extract_features(model, data_loader, device):
     labels = torch.cat(labels)
     return features, labels
 
-# Linear classifier
+# Linear classifier (with projection head)
 class LinearClassifier(nn.Module):
     def __init__(self, input_dim, num_classes, projection, projection_dim):
         super(LinearClassifier, self).__init__()
