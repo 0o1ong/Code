@@ -65,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--learning_rate', type=float, default=0.1)
     parser.add_argument('--epoch_num', type=int, default=100)
-    parser.add_argument('--logdir', type=str, default='final_log')
+    parser.add_argument('--logdir', type=str, default='log')
     parser.add_argument('--dataset', type=str, default='CIFAR10')
     parser.add_argument('--version', type=str, required=True) # v1 / v2 / v3
     args = parser.parse_args()
