@@ -23,10 +23,11 @@ class PreActBlock(nn.Module):
 
 # Pre-train model
 class ResNet(nn.Module):
-    def __init__(self, block, block_num, num_classes=4):
+    def __init__(self, block, block_num, version, num_classes=4):
         super(ResNet, self).__init__()
         self.in_dim = 64
         self.block = block
+        self.version = version
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
         self.layer1 = self.stage(block, 64, block_num[0], first_stride=1)
@@ -34,7 +35,16 @@ class ResNet(nn.Module):
         self.layer3 = self.stage(block, 256, block_num[2], first_stride=2)
         self.layer4 = self.stage(block, 512, block_num[3], first_stride=2)
         self.bn = nn.BatchNorm2d(512)
-        self.fc = nn.Linear(512, num_classes)
+
+        # Projection Head 
+        self.fc1 = nn.Linear(512, 512)
+        self.fc2 = nn.Linear(512, 128)
+
+        # Last fc layer
+        if self.version == 'v3':
+            self.fc = nn.Linear(128, num_classes)
+        else:
+            self.fc = nn.Linear(512, num_classes)
 
     def stage(self, block, dim, num_blocks, first_stride):
         strides = [first_stride] + [1]*(num_blocks-1)
@@ -53,7 +63,11 @@ class ResNet(nn.Module):
         x = self.bn(x)
         x = F.relu(x)
         x = F.avg_pool2d(x, 4)
-        x = torch.flatten(x, 1)
+        x = torch.flatten(x, 1) # representations (512)
+        if self.version == 'v3': # Projection head
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.fc2(x)
         x = self.fc(x)
         return x
 
@@ -91,7 +105,7 @@ class FeatureExtractor(nn.Module):
         x = torch.flatten(x, 1)
         return x
     
-# representation
+# 전이학습된 모델로부터 representation 
 def extract_features(model, data_loader, device):
     model.eval()
     features = []
@@ -106,26 +120,6 @@ def extract_features(model, data_loader, device):
     labels = torch.cat(labels)
     return features, labels
 
-# Linear classifier (with projection head)
-class LinearClassifier(nn.Module):
-    def __init__(self, input_dim, num_classes, projection, projection_dim):
-        super(LinearClassifier, self).__init__()
-        self.projection = projection
-        self.projection_dim = projection_dim
-
-        self.fc1 = nn.Linear(input_dim, input_dim)
-        self.bn = nn.BatchNorm1d(input_dim)
-        self.fc2 = nn.Linear(input_dim, self.projection_dim)
-        self.linear = nn.Linear(self.projection_dim, num_classes)
-
-    def forward(self, x):
-        if self.projection:
-            x = self.fc1(x)
-            x = self.bn(x)
-            x = F.relu(x)
-            x = self.fc2(x)
-        return self.linear(x)
-
 # KNN classifier
 def KNNClassifier(train_features, train_labels, test_features):
     dist = torch.cdist(test_features, train_features, p=2)
@@ -133,3 +127,12 @@ def KNNClassifier(train_features, train_labels, test_features):
     nearest_idx = nearest_idx.squeeze().cpu()
     predicted = train_labels[nearest_idx]
     return predicted
+
+# Linear classifier
+class LinearClassifier(nn.Module):
+    def __init__(self, input_dim, num_classes):
+        super(LinearClassifier, self).__init__()
+        self.linear = nn.Linear(input_dim, num_classes)
+
+    def forward(self, x):
+        return self.linear(x)
