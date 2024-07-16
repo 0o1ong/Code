@@ -33,14 +33,14 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
+    optimizer = optim.SGD(model.parameters(), weight_decay=5e-4, momentum=0.9, lr=learning_rate)
     writer = SummaryWriter(f'{logdir}/{version}')
 
     best_val_acc = 0.0
 
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
-                                                  milestones=[int(epoch_num * 0.5), int(epoch_num * 0.75)],
-                                                  gamma=0.1)
+                                                  milestones=[30, 60, 80],
+                                                  gamma=0.2)
 
     for epoch in range(epoch_num):
         epoch_start_time = time.time()
@@ -52,8 +52,8 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
             if version == 'v1':
                 inputs, labels = rotate_img_v1(inputs) # Random rotation 적용
             elif version == 'v2':
-                batch_size = inputs.size(0) # 64
-                all_rotated_images=s = []
+                batch_size = inputs.size(0) # 128
+                all_rotated_images = []
                 all_labels = []
 
                 for angle in [0, 90, 180, 270]:
