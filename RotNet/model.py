@@ -108,11 +108,20 @@ def extract_features(model, data_loader, device):
 
 # Linear classifier
 class LinearClassifier(nn.Module):
-    def __init__(self, input_dim, num_classes):
+    def __init__(self, input_dim, num_classes, projection, projection_dim):
         super(LinearClassifier, self).__init__()
-        self.linear = nn.Linear(input_dim, num_classes)
+        self.projection = projection
+        self.projection_dim = projection_dim
+
+        if self.projection:
+            self.fc = nn.Linear(input_dim, self.projection_dim)
+            self.linear = nn.Linear(self.projection_dim, num_classes)
+        else: self.linear = nn.Linear(input_dim, num_classes)
 
     def forward(self, x):
+        if self.projection:
+            x = self.fc(x)
+            x = F.relu(x)
         return self.linear(x)
 
 # KNN classifier
