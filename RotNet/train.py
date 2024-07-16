@@ -19,7 +19,7 @@ def rotate_img_v1(images):
         labels.append(label)
     return torch.stack(rotated_images), torch.tensor(labels)
 
-# v2 (4 Rotations)
+# v2, v3 (4 Rotations)
 def rotate_img_v2(images, angle):
     rotated_images = [torch.rot90(img, k=angle // 90, dims=[1, 2]) for img in images]
     return torch.stack(rotated_images)
@@ -51,7 +51,7 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
         for inputs, _ in train_loader:
             if version == 'v1':
                 inputs, labels = rotate_img_v1(inputs) # Random rotation 적용
-            elif version == 'v2':
+            else:
                 batch_size = inputs.size(0) # 128
                 all_rotated_images = []
                 all_labels = []
@@ -90,7 +90,7 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
                 batch_size = inputs.size(0)
                 if version == 'v1':
                     inputs, labels = rotate_img_v1(inputs)
-                elif version == 'v2':
+                else:
                     all_rotated_images = []
                     all_labels = []
 
@@ -112,7 +112,7 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
                 predicted = torch.max(outputs, 1)[1]
                 if version == 'v1':
                     total += batch_size
-                elif version == 'v2':
+                else:
                     total += (batch_size * 4)
                 correct += (predicted == labels).sum().item()
 
