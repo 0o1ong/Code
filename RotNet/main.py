@@ -16,7 +16,7 @@ def main(args):
         logging.StreamHandler()
     ])
     
-    pre_train_model = ResNet(PreActBlock, [2, 2, 2, 2])
+    pre_train_model = ResNet(PreActBlock, [2, 2, 2, 2], args.version)
     train_loader, test_loader = get_data_loaders(args.batch_size, args.dataset)
     
     train(pre_train_model, train_loader, test_loader, args.epoch_num, args.learning_rate, args.logdir, args.version)
@@ -38,7 +38,7 @@ def main(args):
     knn_accuracy = ((knn_predicted == test_labels).float().mean()) * 100
     logging.info(f"KNN Accuracy: {knn_accuracy:.2f}%")
 
-    linear_classifier = LinearClassifier(512, 10, args.projection, args.projection_dim)
+    linear_classifier = LinearClassifier(512, 10)
     linear_classifier.to(device)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(linear_classifier.parameters(), lr=0.01)
@@ -67,9 +67,7 @@ if __name__ == '__main__':
     parser.add_argument('--epoch_num', type=int, default=100)
     parser.add_argument('--logdir', type=str, default='final_log')
     parser.add_argument('--dataset', type=str, default='CIFAR10')
-    parser.add_argument('--version', type=str, required=True) # v1 / v2
-    parser.add_argument('--projection', type=bool, required=True) # 추출된 feature을 분류하기 전 MLP 적용 여부
-    parser.add_argument('--projection_dim', type=int, default=512)
+    parser.add_argument('--version', type=str, required=True) # v1 / v2 / v3
     args = parser.parse_args()
 
     main(args)
