@@ -113,15 +113,17 @@ class LinearClassifier(nn.Module):
         self.projection = projection
         self.projection_dim = projection_dim
 
-        if self.projection:
-            self.fc = nn.Linear(input_dim, self.projection_dim)
-            self.linear = nn.Linear(self.projection_dim, num_classes)
-        else: self.linear = nn.Linear(input_dim, num_classes)
+        self.fc1 = nn.Linear(input_dim, input_dim)
+        self.bn = nn.BatchNorm1d(input_dim)
+        self.fc2 = nn.Linear(input_dim, self.projection_dim)
+        self.linear = nn.Linear(self.projection_dim, num_classes)
 
     def forward(self, x):
         if self.projection:
-            x = self.fc(x)
+            x = self.fc1(x)
+            x = self.bn(x)
             x = F.relu(x)
+            x = self.fc2(x)
         return self.linear(x)
 
 # KNN classifier
