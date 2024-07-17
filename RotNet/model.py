@@ -132,10 +132,7 @@ def KNNClassifier(train_features, train_labels, test_features):
 class LinearClassifier(nn.Module):
     def __init__(self, input_dim, num_classes):
         super(LinearClassifier, self).__init__()
-        self.bn = nn.BatchNorm1d(input_dim)
         self.linear = nn.Linear(input_dim, num_classes)
 
     def forward(self, x):
-        x = self.bn(x)
-        x = F.relu(x)
         return self.linear(x)
