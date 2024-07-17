@@ -66,7 +66,7 @@ class ResNet(nn.Module):
         x = torch.flatten(x, 1) # representations (512)
         if self.version == 'v3': # Projection head
             x = self.proj(x)
-            x = self.bn1(x)
+            # x = self.bn1(x)
             x = F.relu(x)
         x = self.fc(x)
         return x
