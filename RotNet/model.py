@@ -37,8 +37,8 @@ class ResNet(nn.Module):
         self.bn = nn.BatchNorm2d(512)
 
         # Projection Head 
-        self.fc1 = nn.Linear(512, 512)
-        self.fc2 = nn.Linear(512, 128)
+        self.proj = nn.Linear(512, 128)
+        self.bn1 = nn.BatchNorm1d(128)
 
         # Last fc layer
         if self.version == 'v3':
@@ -65,9 +65,9 @@ class ResNet(nn.Module):
         x = F.avg_pool2d(x, 4)
         x = torch.flatten(x, 1) # representations (512)
         if self.version == 'v3': # Projection head
-            x = self.fc1(x)
+            x = self.proj(x)
+            x = self.bn1(x)
             x = F.relu(x)
-            x = self.fc2(x)
         x = self.fc(x)
         return x
 
