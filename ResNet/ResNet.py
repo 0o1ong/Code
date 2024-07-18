@@ -49,15 +49,18 @@ class ResNet(nn.Module):
         self.block = block
         
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(64)
+        if self.block == BasicBlock:
+            self.act1 = nn.Sequential(nn.BatchNorm2d(64),
+                                      nn.ReLU())
+        else: self.act1 = nn.Sequential()
         self.layer1 = self.stage(block, 64, block_num[0], first_stride=1)
         self.layer2 = self.stage(block, 128, block_num[1], first_stride=2)
         self.layer3 = self.stage(block, 256, block_num[2], first_stride=2)
         self.layer4 = self.stage(block, 512, block_num[3], first_stride=2)
         if self.block == PreActBlock:
-            self.act = nn.Sequential(nn.BatchNorm2d(512),
+            self.act2 = nn.Sequential(nn.BatchNorm2d(512),
                                      nn.ReLU())
-        else: self.act = nn.Sequential()
+        else: self.act2 = nn.Sequential()
         self.fc = nn.Linear(512, num_classes) 
 
     def stage(self, block, dim, num_blocks, first_stride):
@@ -70,14 +73,12 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        if self.block == BasicBlock:
-            x = self.bn1(x)
-            x = F.relu(x)
+        x = self.act1(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-        x = self.act(x)
+        x = self.act2(x)
         x = F.avg_pool2d(x, 4)
         x = torch.flatten(x, 1)
         x = self.fc(x)
