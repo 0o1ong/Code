@@ -83,7 +83,3 @@ class ResNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.fc(x)
         return x
-
-def get_model():
-    # return ResNet(BasicBlock, [2, 2, 2, 2])
-    return ResNet(PreActBlock, [2, 2, 2, 2]) 
