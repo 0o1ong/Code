@@ -21,6 +21,3 @@ class LeNet5(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-
-def get_model():
-    return LeNet5()
