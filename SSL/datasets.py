@@ -8,7 +8,6 @@ def get_data_loaders(batch_size, dataset_name):
         transforms.ToTensor(),
         transforms.Normalize(mean=0.5, std=0.5)
     ])
-
     if dataset_name == 'CIFAR10':
         train_set = datasets.CIFAR10('./data', train=True, download=True, transform=transform)
         test_set = datasets.CIFAR10('./data', train=False, download=True, transform=transform)
