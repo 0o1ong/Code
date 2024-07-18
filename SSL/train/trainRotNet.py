@@ -7,6 +7,7 @@ import os
 import time
 import random
 import logging
+from utils import KNN_acc, linear_acc
 
 # v1 (Random Rotate)
 def rotate_img_v1(images):
@@ -19,12 +20,14 @@ def rotate_img_v1(images):
         labels.append(label)
     return torch.stack(rotated_images), torch.tensor(labels)
 
-# v2, v3 (4 Rotations)
+# v2, v3 (4 Rotations) -> Batch 단위로 한번에 회전
 def rotate_img_v2(images, angle):
-    rotated_images = [torch.rot90(img, k=angle // 90, dims=[1, 2]) for img in images]
-    return torch.stack(rotated_images)
+    return torch.rot90(images, k=angle//90, dims=[2, 3])
 
 def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, version):
+    if not os.path.exists(os.path.join(logdir, version)):
+        os.makedirs(os.path.join(logdir, version))
+    
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, version, 'training.log')),
         logging.StreamHandler()
@@ -122,11 +125,16 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
         writer.add_scalar('Loss/val', val_loss, epoch)
         writer.add_scalar('Accuracy/val', val_acc, epoch)
 
+        # KNN accuracy
+        knn_accuracy = KNN_acc(model, train_loader, test_loader, device)
+        writer.add_scalar('Acc/KNN', knn_accuracy, epoch)
+
         epoch_end_time = time.time()
         epoch_duration = epoch_end_time - epoch_start_time
 
         log_message = (f'Epoch [{epoch + 1}/{epoch_num}], Loss: {train_loss:.4f}, '
                        f'Val Loss: {val_loss:.4f}, Val Accuracy: {val_acc:.2f}%, '
+                       f'KNN Accuracy: {knn_accuracy:.2f}%, '
                        f'Time: {epoch_duration:.2f} seconds')
         logging.info(log_message)
 
@@ -134,5 +142,9 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
             best_val_acc = val_acc
             torch.save(model.state_dict(), os.path.join(logdir, version, 'best_model.pth'))
             print(f'Checkpoint saved at epoch {epoch + 1} with validation accuracy {val_acc:.2f}%')
+            
+    # Last epoch: linear acc
+    linear_accuracy = linear_acc(model, epoch, train_loader, test_loader, device)
+    logging.info(f"Linear Accuracy: {linear_accuracy:.2f}%")
 
     writer.close()
