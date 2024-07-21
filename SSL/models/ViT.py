@@ -4,7 +4,7 @@ import torch.nn as nn
 
 # Vision Transformer
 class ViT(nn.Module):
-    def __init__(self, in_dim=3, img_size=32, patch_size=4, d=256, num_layers=12, num_heads=12, num_classes=10):
+    def __init__(self, in_dim=3, img_size=32, patch_size=4, d=256, num_layers=8, num_heads=8, num_classes=10):
         super().__init__()
         self.embedded_patch = PatchEmbedding(in_dim, patch_size, d) # (B, C, H, W) -> (B, N, D)
         num_patches = (img_size//patch_size)**2 # N
@@ -12,11 +12,10 @@ class ViT(nn.Module):
         self.pos_embedding = nn.Parameter(torch.zeros(1, num_patches + 1, d))
 
         self.layers = nn.ModuleList([TransformerEncoder(d=d, num_heads=num_heads) for _ in range(num_layers)]) # input & output size: (B, N, D)
-        self.ln = nn.LayerNorm(d) # D에 대해서 정규화
-        
         self.mlp_head = nn.Sequential(
+            nn.LayerNorm(d),
             nn.Linear(d, d//4),
-            nn.BatchNorm1d(d//4),
+            # nn.BatchNorm1d(d//4),
             nn.ReLU(), 
             nn.Linear(d//4, num_classes)
         ) # projection head
@@ -26,21 +25,18 @@ class ViT(nn.Module):
         x = self.embedded_patch(x) # (B, N, D)
         cls_token = self.cls_token.expand(B, -1, -1) # (B, 1, D)
         x = torch.cat([cls_token, x], dim = 1) # (B, N+1, D)
-        pos_emb = self.pos_embedding.expand(B, -1, -1) # (B, N+1, D)
-        z = x + pos_emb # Encoder input z 
+        z = x + self.pos_embedding # Encoder input z 
         for layer in self.layers:
             z = layer(z)
         last_cls_token = z[:, 0] # z_L^0 (B, D)
-        y = self.ln(last_cls_token)
-        return self.mlp_head(y) # (B, num_classes)
+        y = self.mlp_head(last_cls_token)
+        return y # (B, num_classes)
     
 # input image를 D차원의 벡터 N개로 (패치 임베딩)
 class PatchEmbedding(nn.Module):
     def __init__(self, in_dim=3, patch_size=4, d=256):
         super().__init__()
         self.patch_size = patch_size
-
-        # (B, C, H, W) -> (B, D, H/P, W/P)
         self.proj = nn.Conv2d(in_dim, d, kernel_size=patch_size, stride=patch_size)
 
     def forward(self, x):
@@ -51,7 +47,7 @@ class PatchEmbedding(nn.Module):
 
 # MultiHead Self Attention
 class MSA(nn.Module):
-    def __init__(self, d=256, num_heads=12):
+    def __init__(self, d=256, num_heads=8):
         super().__init__()
         self.num_heads = num_heads
         self.d_h = d // num_heads
@@ -75,7 +71,7 @@ class MSA(nn.Module):
 
 # Transformer Encoder
 class TransformerEncoder(nn.Module):
-    def __init__(self, d=256, d_mlp=1024, num_heads=12):
+    def __init__(self, d=256, d_mlp=1024, num_heads=8):
         super().__init__()
         self.ln1 = nn.LayerNorm(d)
         self.msa = MSA(d, num_heads)
@@ -83,7 +79,9 @@ class TransformerEncoder(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(d, d_mlp),
             nn.GELU(),
-            nn.Linear(d_mlp, d)
+            nn.Dropout(0.1),
+            nn.Linear(d_mlp, d),
+            nn.Dropout(0.1)
         )
     
     def forward(self, x):
