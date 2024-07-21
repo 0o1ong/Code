@@ -17,14 +17,14 @@ def train_basic(model, train_loader, test_loader, epoch_num, learning_rate, logd
     model.to(device)
     criterion = nn.CrossEntropyLoss()
     #optimizer = optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
-    optimizer = optim.Adam(model.parameters(), weight_decay=0.1, lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), weight_decay=1e-4, lr=learning_rate)
     writer = SummaryWriter(f'{logdir}')
 
     best_val_acc = 0.0
 
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
                                                   milestones=[int(epoch_num * 0.5), int(epoch_num * 0.75)], 
-                                                  gamma=0.1)
+                                                  gamma=0.3)
 
     for epoch in range(epoch_num):
         epoch_start_time = time.time()
