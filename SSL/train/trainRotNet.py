@@ -7,7 +7,7 @@ import os
 import time
 import random
 import logging
-from utils import KNN_acc, linear_acc
+from .utils import KNN_acc, linear_acc
 
 # v1 (Random Rotate)
 def rotate_img_v1(images):
@@ -24,10 +24,8 @@ def rotate_img_v1(images):
 def rotate_img_v2(images, angle):
     return torch.rot90(images, k=angle//90, dims=[2, 3])
 
-def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, version):
-    if not os.path.exists(os.path.join(logdir, version)):
-        os.makedirs(os.path.join(logdir, version))
-    
+def train_rotnet(model, train_loader, test_loader, epoch_num, learning_rate, logdir, version):
+
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, version, 'training.log')),
         logging.StreamHandler()
@@ -39,7 +37,7 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
     optimizer = optim.SGD(model.parameters(), weight_decay=5e-4, momentum=0.9, lr=learning_rate)
     writer = SummaryWriter(f'{logdir}/{version}')
 
-    best_val_acc = 0.0
+    best_knn_acc = 0.0
 
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
                                                   milestones=[30, 60, 80],
@@ -127,7 +125,7 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
 
         # KNN accuracy
         knn_accuracy = KNN_acc(model, train_loader, test_loader, device)
-        writer.add_scalar('Acc/KNN', knn_accuracy, epoch)
+        writer.add_scalar('Accuracy/KNN', knn_accuracy, epoch)
 
         epoch_end_time = time.time()
         epoch_duration = epoch_end_time - epoch_start_time
@@ -138,10 +136,10 @@ def train(model, train_loader, test_loader, epoch_num, learning_rate, logdir, ve
                        f'Time: {epoch_duration:.2f} seconds')
         logging.info(log_message)
 
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
+        if knn_accuracy > best_knn_acc:
+            best_knn_acc = knn_accuracy
             torch.save(model.state_dict(), os.path.join(logdir, version, 'best_model.pth'))
-            print(f'Checkpoint saved at epoch {epoch + 1} with validation accuracy {val_acc:.2f}%')
+            print(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
             
     # Last epoch: linear acc
     linear_accuracy = linear_acc(model, epoch, train_loader, test_loader, device)
