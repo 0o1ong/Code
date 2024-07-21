@@ -8,9 +8,9 @@ from train import *
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--learning_rate', type=float, default=0.1)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--epoch_num', type=int, default=100)
-    parser.add_argument('--logdir', type=str, default='log')
+    parser.add_argument('--logdir', type=str, default='log_vit')
     parser.add_argument('--model', type=str, default='vit')
     parser.add_argument('--dataset', type=str, default='cifar10')
     parser.add_argument('--train', type=str, default='basic')
@@ -18,8 +18,12 @@ def main():
     
     args = parser.parse_args()
 
-    if not os.path.exists(os.path.join(args.logdir, args.version)):
-        os.makedirs(os.path.join(args.logdir, args.version))
+    if args.model == 'rotnet':
+        if not os.path.exists(os.path.join(args.logdir, args.version)):
+            os.makedirs(os.path.join(args.logdir, args.version))
+    else:
+        if not os.path.exists(args.logdir):
+            os.makedirs(args.logdir)
 
     train_loader, test_loader = get_data_loaders(args.batch_size, args.dataset)
 
