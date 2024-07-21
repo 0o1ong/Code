@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class PreActBlock(nn.Module):
     def __init__(self, in_dim, dim, stride=1):
-        super(PreActBlock, self).__init__()
+        super().__init__()
         self.residual = nn.Sequential(
             nn.BatchNorm2d(in_dim),
             nn.ReLU(),
@@ -21,9 +21,9 @@ class PreActBlock(nn.Module):
         return self.residual(x) + self.identity(x)
 
 # Pre-train model
-class ResNet(nn.Module):
+class RotNet(nn.Module):
     def __init__(self, block, block_num, version, num_classes=4):
-        super(ResNet, self).__init__()
+        super().__init__()
         self.in_dim = 64
         self.block = block
         self.version = version
