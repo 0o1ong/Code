@@ -17,7 +17,7 @@ class BasicBlock(nn.Module):
         self.identity = nn.Sequential()
         if stride != 1 or in_dim != dim:
             self.identity = nn.Conv2d(in_dim, dim, kernel_size=1, stride=stride)
-            
+
     def forward(self, x):
         return F.relu(self.residual(x) + self.identity(x))
 
@@ -41,13 +41,39 @@ class PreActBlock(nn.Module):
     def forward(self, x):
         return self.residual(x) + self.identity(x)
 
+class BottleNeck(nn.Module):
+    def __init__(self, in_dim, dim, stride=1):
+        super().__init__()
+        self.expansion = 4
+
+        self.residual = nn.Sequential(
+            nn.BatchNorm2d(in_dim),
+            nn.ReLU(),
+            nn.Conv2d(in_dim, dim, kernel_size=1, stride=stride),
+            nn.BatchNorm2d(dim),
+            nn.ReLU(),
+            nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(dim),
+            nn.ReLU(),
+            nn.Conv2d(dim, dim * self.expansion, kernel_size=1, stride=1)
+        )
+        self.identity = nn.Sequential()
+        if stride != 1 or in_dim != dim * self.expansion:
+            self.identity = nn.Conv2d(in_dim, dim * self.expansion, kernel_size=1, stride=stride)
+
+    def forward(self, x):
+        return self.residual(x) + self.identity(x)
 
 class ResNet(nn.Module):
     def __init__(self, block, block_num, num_classes=10):
         super(ResNet, self).__init__()
         self.in_dim = 64
         self.block = block
-        
+        if self.block == BottleNeck:
+            self.expansion = 4
+        else:
+            self.expansion = 1
+
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
         if self.block == BasicBlock:
             self.act1 = nn.Sequential(nn.BatchNorm2d(64),
@@ -61,14 +87,14 @@ class ResNet(nn.Module):
             self.act2 = nn.Sequential(nn.BatchNorm2d(512),
                                      nn.ReLU())
         else: self.act2 = nn.Sequential()
-        self.fc = nn.Linear(512, num_classes) 
+        self.fc = nn.Linear(512*self.expansion, num_classes)
 
     def stage(self, block, dim, num_blocks, first_stride):
         strides = [first_stride] + [1]*(num_blocks-1)
         layers = []
         for stride in strides:
             layers.append(block(self.in_dim, dim, stride))
-            self.in_dim = dim
+            self.in_dim = dim * self.expansion
         return nn.Sequential(*layers)
 
     def forward(self, x):
