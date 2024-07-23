@@ -65,7 +65,7 @@ class BottleNeck(nn.Module):
         return self.residual(x) + self.identity(x)
 
 class ResNet(nn.Module):
-    def __init__(self, block, block_num, num_classes=10):
+    def __init__(self, block, block_num, num_classes=512):
         super(ResNet, self).__init__()
         self.in_dim = 64
         self.block = block
@@ -87,7 +87,12 @@ class ResNet(nn.Module):
             self.act2 = nn.Sequential(nn.BatchNorm2d(512),
                                      nn.ReLU())
         else: self.act2 = nn.Sequential()
-        self.fc = nn.Linear(512*self.expansion, num_classes)
+        # self.fc = nn.Linear(512*self.expansion, num_classes)
+        # add projection head
+        self.fc = nn.Sequential(nn.Linear(512*self.expansion, 128),
+                                    nn.BatchNorm1d(128),
+                                    nn.ReLU(),
+                                    nn.Linear(128, num_classes))
 
     def stage(self, block, dim, num_blocks, first_stride):
         strides = [first_stride] + [1]*(num_blocks-1)
@@ -108,4 +113,16 @@ class ResNet(nn.Module):
         x = F.avg_pool2d(x, 4)
         x = torch.flatten(x, 1)
         x = self.fc(x)
+        return x
+
+    def extract_features(self, x):
+        x = self.conv1(x)
+        x = self.act1(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.act2(x)
+        x = F.avg_pool2d(x, 4)
+        x = torch.flatten(x, 1)
         return x
