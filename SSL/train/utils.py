@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import transforms
+from torchvision.transforms.functional import to_pil_image
 
 # Extract Representation
 def represent(model, data_loader, device, aug):
@@ -78,6 +80,22 @@ def linear_acc(model, epoch, train_loader, test_loader, device, aug):
 
     linear_accuracy = ((predicted == test_labels).float().mean()) * 100
     return linear_accuracy
+
+def aug(inputs):
+    aug_img = []
+    aug_trans = transforms.Compose([
+                  transforms.RandomResizedCrop(32),
+                  transforms.RandomHorizontalFlip(),
+                  transforms.RandomApply([transforms.ColorJitter(0.8, 0.8, 0.8, 0.2)], p=0.8),
+                  transforms.RandomGrayscale(p=0.2),
+                  transforms.ToTensor(),
+                  transforms.Normalize(mean=0.5, std=0.5)
+                  ])
+    
+    for img in inputs:
+        pil_img = to_pil_image(img)  # Tensor -> PIL
+        aug_img.append(aug_trans(pil_img))
+    return torch.stack(aug_img)
 
 def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
     sim = torch.matmul(z, z.T) 
