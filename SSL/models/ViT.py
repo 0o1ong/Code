@@ -14,11 +14,12 @@ class ViT(nn.Module):
         self.layers = nn.ModuleList([TransformerEncoder(d=d, num_heads=num_heads) for _ in range(num_layers)]) # input & output size: (B, N, D)
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(d),
+            # Proj head
             nn.Linear(d, d//4),
-            # nn.BatchNorm1d(d//4),
+            nn.BatchNorm1d(d//4),
             nn.ReLU(), 
             nn.Linear(d//4, num_classes)
-        ) # projection head
+        )
 
     def forward(self, x):
         B, _, _, _ = x.shape
@@ -50,7 +51,7 @@ class MSA(nn.Module):
     def __init__(self, d=256, num_heads=8):
         super().__init__()
         self.num_heads = num_heads
-        self.d_h = d // num_heads
+        self.d_h = d // num_heads # head별 q, k, v 차원
 
         self.u_qkv = nn.Linear(d, 3 * self.d_h * self.num_heads) # [q, k, v] = zU_qkv
         self.u_msa = nn.Linear(self.num_heads * self.d_h, d) 
