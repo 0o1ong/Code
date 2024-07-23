@@ -22,10 +22,12 @@ def train_basic(model, train_loader, test_loader, epoch_num, learning_rate, logd
 
     best_val_acc = 0.0
 
-    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
+    '''lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
                                                   milestones=[int(epoch_num * 0.5), int(epoch_num * 0.75)], 
-                                                  gamma=0.3)
-
+                                                  gamma=0.3)'''
+    
+    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num)
+    
     for epoch in range(epoch_num):
         epoch_start_time = time.time()
 
