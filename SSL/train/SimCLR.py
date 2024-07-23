@@ -37,12 +37,12 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir):
             aug1, aug2 = aug1.to(device), aug2.to(device)
 
             optimizer.zero_grad()
-            outputs1 = model(aug1)  # (batch_size, 512)
-            outputs2 = model(aug2)  # (batch_size, 512)
+            out1 = model(aug1)  # (batch_size, 512)
+            out2 = model(aug2)  # (batch_size, 512)
             z = []
-            for i in range(outputs1.size()[0]):
-                z.append(outputs1[i])
-                z.append(outputs2[i])
+            for i in range(out1.size()[0]):
+                z.append(out1[i])
+                z.append(out2[i])
             z = torch.stack(z) # 2k-1, 2k -> positive pair, (2*batch_size, 512)
             loss = NT_Xent(z=z, temperature=0.5, device=device)
             loss.backward()
