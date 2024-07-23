@@ -41,7 +41,7 @@ def get_data_loaders(batch_size, dataset_name, train):
         aug_train_set = DataAug(train_set)
         train_loader = DataLoader(aug_train_set, batch_size=batch_size, shuffle=True)
     else:
-        train_loader=DataLoader(train_set, batch_size=batch_size, shuffle=True)
+        train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=batch_size)
 
     return train_loader, test_loader
