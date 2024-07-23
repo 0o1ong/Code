@@ -31,12 +31,14 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir):
         model.train(True)
         running_loss = 0.0
 
-        for input1, input2, _ in train_loader:
-            input1, input2 = input1.to(device), input2.to(device)  # Positive Pair
+        for inputs, _ in train_loader:
+            aug1 = aug(inputs)
+            aug2 = aug(inputs) # Positive Pair
+            aug1, aug2 = aug1.to(device), aug2.to(device)
 
             optimizer.zero_grad()
-            outputs1 = model(input1)  # (batch_size, 512)
-            outputs2 = model(input2)  # (batch_size, 512)
+            outputs1 = model(aug1)  # (batch_size, 512)
+            outputs2 = model(aug2)  # (batch_size, 512)
             z = []
             for i in range(outputs1.size()[0]):
                 z.append(outputs1[i])
