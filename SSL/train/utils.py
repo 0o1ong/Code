@@ -5,26 +5,16 @@ from torchvision import transforms
 from torchvision.transforms.functional import to_pil_image
 
 # Extract Representation
-def represent(model, data_loader, device, aug):
+def represent(model, data_loader, device):
     model.eval()
     features = []
     labels = []
     with torch.no_grad():
-        if aug:
-            for inputs1, inputs2, targets in data_loader:
-                inputs1, inputs2 = inputs1.to(device), inputs2.to(device)
-                outputs1 = model.extract_features(inputs1)
-                outputs2 = model.extract_features(inputs2)
-                features.append(outputs1)
-                features.append(outputs2)
-                labels.append(targets)
-                labels.append(targets) # label도 두번 추가 
-        else:
-            for inputs, targets in data_loader:
-                inputs = inputs.to(device)
-                outputs = model.extract_features(inputs)
-                features.append(outputs)
-                labels.append(targets)
+        for inputs, targets in data_loader:
+            inputs = inputs.to(device)
+            outputs = model.extract_features(inputs)
+            features.append(outputs)
+            labels.append(targets)
     features = torch.cat(features)
     labels = torch.cat(labels)
     return features, labels
@@ -38,9 +28,9 @@ def KNNClassifier(train_features, train_labels, test_features):
     return predicted
 
 # KNN accuracy
-def KNN_acc(model, train_loader, test_loader, device, aug):
-    train_features, train_labels = represent(model, train_loader, device, aug)
-    test_features, test_labels = represent(model, test_loader, device, aug=False)
+def KNN_acc(model, train_loader, test_loader, device):
+    train_features, train_labels = represent(model, train_loader, device)
+    test_features, test_labels = represent(model, test_loader, device)
     knn_predicted = KNNClassifier(train_features, train_labels, test_features)
     knn_accuracy = ((knn_predicted == test_labels).float().mean()) * 100
     return knn_accuracy
@@ -55,9 +45,9 @@ class LinearClassifier(nn.Module):
         return self.linear(x)
 
 # Linear accuracy
-def linear_acc(model, epoch, train_loader, test_loader, device, aug):
-    train_features, train_labels = represent(model, train_loader, device, aug)
-    test_features, test_labels = represent(model, test_loader, device, aug=False)
+def linear_acc(model, epoch, train_loader, test_loader, device):
+    train_features, train_labels = represent(model, train_loader, device)
+    test_features, test_labels = represent(model, test_loader, device)
 
     linear_classifier = LinearClassifier(512, 10)
     linear_classifier.to(device)
