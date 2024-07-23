@@ -3,7 +3,7 @@ from .ResNet import *
 from .RotNet import *
 from .ViT import *
 
-__all__ = ['LeNet5', 'BasicBlock', 'PreActBlock', 'ResNet', 'RotNet', 'ViT', 'get_model']
+__all__ = ['LeNet5', 'BasicBlock', 'PreActBlock', 'BottleNeck', 'ResNet', 'RotNet', 'ViT', 'get_model']
 
 def get_model(model_name, *args):
     if model_name == 'lenet':
