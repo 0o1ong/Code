@@ -88,11 +88,14 @@ def aug(inputs):
     return torch.stack(aug_img)
 
 def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
-    sim = torch.matmul(z, z.T) 
+    '''sim = torch.matmul(z, z.T) 
     norms = torch.norm(z, dim=1, keepdim=True) # 각 z의 norm값
     norms_prodict = torch.matmul(norms, norms.T) # ||z_i||*||z_j||, size: (2N, 2N)
     cos_sim = sim / norms_prodict
-    cos_sim /= temperature
+    cos_sim /= temperature'''
+
+    z = F.normalize(z, dim=1)
+    cos_sim = torch.matmul(z, z.T) / temperature
 
     indices = torch.arange(cos_sim.size(0))
     cos_sim[indices, indices] = float('-inf') # exp(-inf)==0, 같은 이미지에 대한 유사도(sim_{i, i}) 무시 가능
