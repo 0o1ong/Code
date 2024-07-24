@@ -71,6 +71,7 @@ def linear_acc(model, epoch, input_dim, num_classes, train_loader, test_loader, 
     linear_accuracy = ((predicted == test_labels).float().mean()) * 100
     return linear_accuracy
 
+# Data augmentation
 def aug(inputs):
     aug_img = []
     aug_trans = transforms.Compose([
@@ -87,6 +88,7 @@ def aug(inputs):
         aug_img.append(aug_trans(pil_img))
     return torch.stack(aug_img)
 
+# NT-Xent loss function
 def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
     '''sim = torch.matmul(z, z.T) 
     norms = torch.norm(z, dim=1, keepdim=True) # 각 z의 norm값
