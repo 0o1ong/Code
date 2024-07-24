@@ -102,10 +102,10 @@ def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
     indices = torch.arange(cos_sim.size(0))
     cos_sim[indices, indices] = float('-inf') # exp(-inf)==0, 같은 이미지에 대한 유사도(sim_{i, i}) 무시 가능
     # 각 Column마다 target은 positive pair (2k -> 2k-1 , 2k-1 -> 2k)
-    target = torch.arange(cos_sim.size(0)).to(device)
+    labels = torch.arange(cos_sim.size(0)).to(device)
     for i in range(cos_sim.size(0)):
         if (i % 2) == 0: # 2k
-            target[i] += 1
+            labels[i] += 1
         else:            # 2k-1
-            target[i] -= 1
-    return F.cross_entropy(cos_sim, target)
+            labels[i] -= 1
+    return F.cross_entropy(cos_sim, labels)
