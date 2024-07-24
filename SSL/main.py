@@ -28,9 +28,9 @@ def main():
         model = get_model(args.model, PreActBlock, [2, 2, 2, 2], args.version)
         train(args.train, model, train_loader, test_loader, args.epoch_num, args.learning_rate, args.logdir, args.version)
     else:
-        if args.train == 'simclr':
+        if args.train == 'simclr' or args.train == 'moco':
             model = get_model(args.model, BottleNeck, [3, 4, 6, 3]) # Base Encoder: ResNet-50
-            train(args.train, model, train_loader, test_loader, args.epoch_num, args.learning_rate, args.logdir)
+            train(args.train, model, train_loader, test_loader, args.epoch_num, args.learning_rate, args.logdir, args.batch_size)
         else:
             model = get_model(args.model)
             train(args.train, model, train_loader, test_loader, args.epoch_num, args.learning_rate, args.logdir)
