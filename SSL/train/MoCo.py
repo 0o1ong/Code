@@ -12,16 +12,10 @@ from collections import deque
 # encoder: ResNet
     # output_dim(num_classes)=128 -> normalized by its L2-norm
     # BN 사용 X (shuffling BN)
-# tau=0.07
-# optimizer=SGD(weight_decay=1e-4, momentum=0.9)
-# batch_size=256
-# learning_rate=0.03
-    # 120, 160 epoch마다 0.1배
-# epoch_num=200
 
-# dict_size = 256*64
+# dict_size = 256*64 = 16384
 
-def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, batch_size, dim=128, dict_size=16384, m=0.999, t=0.07, ):
+def moco(encoder, train_loader, test_loader, epoch_num=200, learning_rate='0.03', logdir='log_moco', batch_size=256, dim=128, dict_size=16384, m=0.999, t=0.07, ):
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, 'training.log')),
         logging.StreamHandler()
