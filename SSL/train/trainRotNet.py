@@ -142,7 +142,7 @@ def train_rotnet(model, train_loader, test_loader, epoch_num, learning_rate, log
             print(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
             
     # Last epoch: linear acc
-    linear_accuracy = linear_acc(model, epoch, train_loader, test_loader, device)
+    linear_accuracy = linear_acc(model, epoch, 512, 10, train_loader, test_loader, device)
     logging.info(f"Linear Accuracy: {linear_accuracy:.2f}%")
 
     writer.close()
