@@ -45,11 +45,11 @@ class LinearClassifier(nn.Module):
         return self.linear(x)
 
 # Linear accuracy
-def linear_acc(model, epoch, train_loader, test_loader, device):
+def linear_acc(model, epoch, input_dim, num_classes, train_loader, test_loader, device):
     train_features, train_labels = represent(model, train_loader, device)
     test_features, test_labels = represent(model, test_loader, device)
 
-    linear_classifier = LinearClassifier(512, 10)
+    linear_classifier = LinearClassifier(input_dim, num_classes)
     linear_classifier.to(device)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(linear_classifier.parameters(), lr=0.01)
