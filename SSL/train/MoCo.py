@@ -13,9 +13,7 @@ from collections import deque
     # output_dim(num_classes)=128 -> normalized by its L2-norm
     # BN 사용 X (shuffling BN)
 
-# dict_size = 256*64 = 16384
-
-def moco(encoder, train_loader, test_loader, epoch_num=200, learning_rate='0.03', logdir='log_moco', batch_size=256, dim=128, dict_size=16384, m=0.999, t=0.07, ):
+def moco(encoder, train_loader, test_loader, epoch_num=200, learning_rate=0.03, logdir='log_moco', batch_size=256, dim=128, dict_size=16384, m=0.999, t=0.07):
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, 'training.log')),
         logging.StreamHandler()
@@ -26,11 +24,11 @@ def moco(encoder, train_loader, test_loader, epoch_num=200, learning_rate='0.03'
     f_q = encoder(num_classes=dim) # query encoder
     f_k = encoder(num_classes=dim) # key encoder
 
-    keys = torch.randn(dict_size//batch_size, batch_size, dim) # (64, 256, 128) 랜덤 초기화
+    keys = torch.randn(dict_size//batch_size, batch_size, dim) # (64, 256, 128) 랜덤 초기화 (dict_size = 64 * batch_size)
     queue = deque(keys) # dict
 
     for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
-        k_param = k_param.copy_(q_param)
+        k_param.data.copy_(q_param)
         k_param.requires_grad = False
 
     criterion = nn.CrossEntropyLoss()
@@ -47,7 +45,6 @@ def moco(encoder, train_loader, test_loader, epoch_num=200, learning_rate='0.03'
         epoch_start_time = time.time()
 
         f_q.train(True)
-        f_k.train(False)
         running_loss = 0.0
 
         for x, _ in train_loader:
