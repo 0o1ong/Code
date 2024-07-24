@@ -8,7 +8,7 @@ import time
 import logging
 from .utils import *
 
-def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir):
+def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir, batch_size):
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, 'training.log')),
         logging.StreamHandler()
@@ -37,7 +37,7 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir):
             out1 = model(aug1)  # (batch_size, 512)
             out2 = model(aug2)  # (batch_size, 512)
             z = []
-            for i in range(out1.size()[0]):
+            for i in range(batch_size):
                 z.append(out1[i])
                 z.append(out2[i])
             z = torch.stack(z) # 2k-1, 2k -> positive pair, (2*batch_size, 512)
