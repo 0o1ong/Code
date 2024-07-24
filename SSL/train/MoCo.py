@@ -19,9 +19,9 @@ from collections import deque
     # 120, 160 epoch마다 0.1배
 # epoch_num=200
 
-# dict_size = 256*64 = 16384
+# dict_size = 256*64
 
-def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, dim=128, dict_size=16384, m=0.999, t=0.07):
+def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, batch_size, dim=128, dict_size=16384, m=0.999, t=0.07, ):
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, 'training.log')),
         logging.StreamHandler()
@@ -32,7 +32,8 @@ def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, d
     f_q = encoder(num_classes=dim) # query encoder
     f_k = encoder(num_classes=dim) # key encoder
 
-    queue = deque() # dict
+    keys = torch.randn(dict_size//batch_size, batch_size, dim) # (64, 256, 128) 랜덤 초기화
+    queue = deque(keys) # dict
 
     for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
         k_param = k_param.copy_(q_param)
@@ -52,6 +53,7 @@ def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, d
         epoch_start_time = time.time()
 
         f_q.train(True)
+        f_k.train(False)
         running_loss = 0.0
 
         for x, _ in train_loader:
@@ -65,31 +67,32 @@ def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, d
             k = f_k(x_k) # 128차원의 키 256개
             k = k.detach() # no gradient to keys
 
-            N = x.size()[0] # batch size
-
             # positive logits
             # batch matrix multiplication -> positive pair의 유사도 (q*k_+)
-            l_pos = torch.bmm(q.view(N, 1, dim), k.view(N, dim, 1)) # (N, 1)
+            l_pos = torch.bmm(q.view(batch_size, 1, dim), k.view(batch_size, dim, 1)) # (batch_size, 1)
 
             # negative logits
             # matrix multiplication -> 쿼리 & 딕셔너리의 키값들과의 유사도 (q*k)
-            l_neg = torch.matmul(q, queue.view(dim, dict_size)) # (N, dict_size) -> N개의 쿼리와 dict_size개의 키끼리 유사도 (l_neg[i][j]: q_i * k_j)
+            keys_tensor = [key.T for key in queue]
+            tensor_queue = torch.cat(keys_tensor, dim=1) # (dim, dict_size)
+            l_neg = torch.matmul(q, tensor_queue) # (batch_size, dict_size) -> batch_size개의 쿼리와 dict_size개의 키끼리 유사도 (l_neg[i][j]: q_i * k_j)
 
-            logits = torch.cat([l_pos, l_neg], dim=-1) # (N, dict_size+1)
+            logits = torch.cat([l_pos, l_neg], dim=-1) # (batch_size, dict_size+1)
 
-            labels = torch.zeros(N) # positive -> 1st column (idx=0)
+            labels = torch.zeros(batch_size) # positive -> 1st column (idx=0)
             loss = criterion(logits/t, labels)
             loss.backward()
             optimizer.step()
 
             running_loss += loss.item()
 
-            # f_k.parameters() = m*f_k.parameters() + (1-m)*f_q.parameters()
+            # Momentum update
+            for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
+                k_param.data.copy_(m*k_param + (1.0-m)*q_param)
 
-            # enqueue
-            queue.append(k)
-            # dequeue -> 64번의 iter 이후에는 무조건 dequeue해주기 (사이즈 꽉 참!!)
-            queue.popleft()
+            # queue.size(): (64, batch_size, dim), 64*N = dict_size
+            queue.append(k) # enqueue -> k: (batch_size, dim)
+            queue.popleft() # dequeue
 
         lr_scheduler.step()
 
@@ -116,4 +119,3 @@ def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, d
     logging.info(f"Linear Accuracy: {linear_accuracy:.2f}%")
 
     writer.close()
-        
