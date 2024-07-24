@@ -19,10 +19,7 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir):
     optimizer = optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
     writer = SummaryWriter(f'{logdir}')
 
-    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
-                                                  milestones=[int(epoch_num * 0.5), int(epoch_num * 0.75)], 
-                                                  gamma=0.1)
-
+    lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.6, total_steps=epoch_num, cycle_momentum=False)
     best_knn_acc = 0.0
 
     for epoch in range(epoch_num):
