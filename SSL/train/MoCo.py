@@ -16,10 +16,12 @@ from collections import deque
 # optimizer=SGD(weight_decay=1e-4, momentum=0.9)
 # batch_size=256
 # learning_rate=0.03
+    # 120, 160 epoch마다 0.1배
 # epoch_num=200
 
+# dict_size = 256*64 = 16384
 
-def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, dim=128, k=65536, m=0.999, t=0.07):
+def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, dim=128, dict_size=16384, m=0.999, t=0.07):
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, 'training.log')),
         logging.StreamHandler()
@@ -37,11 +39,11 @@ def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, d
         k_param.requires_grad = False
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(f_q.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
+    optimizer = optim.SGD(f_q.parameters(), weight_decay=1e-4, momentum=0.9, lr=learning_rate)
     writer = SummaryWriter(f'{logdir}')
 
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
-                                                  milestones=[int(epoch_num * 0.5), int(epoch_num * 0.75)], 
+                                                  milestones=[120, 160], 
                                                   gamma=0.1)
 
     best_knn_acc = 0.0
@@ -63,16 +65,19 @@ def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, d
             k = f_k(x_k) # 128차원의 키 256개
             k = k.detach() # no gradient to keys
 
-            # positive logits: N*1
             N = x.size()[0] # batch size
-            l_pos = torch.bmm(q.view(N, 1, dim), k.view(N, dim, 1))
 
-            # negative logits: N*K
-            l_neg = torch.matmul(q.view(N, dim), )
+            # positive logits
+            # batch matrix multiplication -> positive pair의 유사도 (q*k_+)
+            l_pos = torch.bmm(q.view(N, 1, dim), k.view(N, dim, 1)) # (N, 1)
 
-            logits = torch.cat([l_pos, l_neg], dim=-1)
+            # negative logits
+            # matrix multiplication -> 쿼리 & 딕셔너리의 키값들과의 유사도 (q*k)
+            l_neg = torch.matmul(q, queue.view(dim, dict_size)) # (N, dict_size) -> N개의 쿼리와 dict_size개의 키끼리 유사도 (l_neg[i][j]: q_i * k_j)
 
-            labels = torch.zeros(N)
+            logits = torch.cat([l_pos, l_neg], dim=-1) # (N, dict_size+1)
+
+            labels = torch.zeros(N) # positive -> 1st column (idx=0)
             loss = criterion(logits/t, labels)
             loss.backward()
             optimizer.step()
@@ -83,7 +88,7 @@ def moco(encoder, train_loader, test_loader, epoch_num, learning_rate, logdir, d
 
             # enqueue
             queue.append(k)
-            # dequeue
+            # dequeue -> 64번의 iter 이후에는 무조건 dequeue해주기 (사이즈 꽉 참!!)
             queue.popleft()
 
         lr_scheduler.step()
