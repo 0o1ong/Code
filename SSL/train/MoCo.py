@@ -81,7 +81,7 @@ def moco(encoder, train_loader, test_loader, epoch_num=200, learning_rate=0.03, 
             for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
                 k_param.data.copy_(m*k_param + (1.0-m)*q_param)
 
-            # queue.size(): (64, batch_size, dim), 64*N = dict_size
+            # queue.size(): (64, batch_size, dim), 64*batch_size = dict_size
             queue.append(k) # enqueue -> k: (batch_size, dim)
             queue.popleft() # dequeue
 
