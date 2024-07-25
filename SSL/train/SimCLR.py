@@ -14,7 +14,8 @@ def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
     z = F.normalize(z, dim=1)
     cos_sim = torch.matmul(z, z.T) / temperature
     cos_sim.fill_diagonal_(float('-inf')) # 같은 이미지에 대한 유사도(sim_{i, i}) 무시 가능
-    batch_size = cos_sim.size(0) # 각 Column마다 target은 positive pair (i <-> i+batch_size) 
+    batch_size = cos_sim.size(0)//2 
+    # 각 Column마다 target은 positive pair (i <-> i+batch_size) 
     target = torch.cat([torch.arange(batch_size)+batch_size, torch.arange(batch_size)]).to(device)
     return F.cross_entropy(cos_sim, target)
 
