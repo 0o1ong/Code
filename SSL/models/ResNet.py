@@ -83,11 +83,12 @@ class ResNet(nn.Module):
         self.layer2 = self.stage(block, 128, block_num[1], first_stride=2)
         self.layer3 = self.stage(block, 256, block_num[2], first_stride=2)
         self.layer4 = self.stage(block, 512, block_num[3], first_stride=2)
-        if self.block == PreActBlock:
+        if self.block == PreActBlock or BottleNeck:
             self.act2 = nn.Sequential(nn.BatchNorm2d(512),
                                      nn.ReLU())
         else: self.act2 = nn.Sequential()
         # self.fc = nn.Linear(512*self.expansion, num_classes)
+
         # add projection head
         self.fc = nn.Sequential(nn.Linear(512*self.expansion, 128),
                                     nn.BatchNorm1d(128),
@@ -101,20 +102,7 @@ class ResNet(nn.Module):
             layers.append(block(self.in_dim, dim, stride))
             self.in_dim = dim * self.expansion
         return nn.Sequential(*layers)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.act1(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.act2(x)
-        x = F.avg_pool2d(x, 4)
-        x = torch.flatten(x, 1)
-        x = self.fc(x)
-        return x
-
+    
     def extract_features(self, x):
         x = self.conv1(x)
         x = self.act1(x)
@@ -126,3 +114,9 @@ class ResNet(nn.Module):
         x = F.avg_pool2d(x, 4)
         x = torch.flatten(x, 1)
         return x
+    
+    def forward(self, x):
+        x = self.extract_features(x)
+        x = self.fc(x)
+        return x
+
