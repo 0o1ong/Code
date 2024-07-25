@@ -1,7 +1,7 @@
-from .LeNet import *
-from .ResNet import *
-from .RotNet import *
-from .ViT import *
+from .LeNet import LeNet5
+from .ResNet import ResNet, BasicBlock, PreActBlock, BottleNeck
+from .RotNet import RotNet
+from .ViT import ViT
 
 __all__ = ['LeNet5', 'BasicBlock', 'PreActBlock', 'BottleNeck', 'ResNet', 'RotNet', 'ViT', 'get_model']
 
