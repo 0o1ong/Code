@@ -68,7 +68,7 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir, b
             torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
             print(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
     
-    linear_accuracy = linear_acc(model, epoch_num, 2048, 10, train_loader, test_loader, device)
+    linear_accuracy = linear_acc(model, epoch_num, 2048, 512, train_loader, test_loader, device)
     logging.info(f"Linear Accuracy: {linear_accuracy:.2f}%")
 
     writer.close()
