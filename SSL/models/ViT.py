@@ -16,7 +16,7 @@ class ViT(nn.Module):
             nn.LayerNorm(d),
             # Proj head
             nn.Linear(d, d//4),
-            nn.BatchNorm1d(d//4),
+            # nn.BatchNorm1d(d//4),
             nn.ReLU(), 
             nn.Linear(d//4, num_classes)
         )
@@ -80,9 +80,9 @@ class TransformerEncoder(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(d, d_mlp),
             nn.GELU(),
-            nn.Dropout(0.1),
+            # nn.Dropout(0.1),
             nn.Linear(d_mlp, d),
-            nn.Dropout(0.1)
+            # nn.Dropout(0.1)
         )
     
     def forward(self, x):
