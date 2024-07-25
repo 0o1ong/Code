@@ -51,19 +51,6 @@ class RotNet(nn.Module):
             self.in_dim = dim
         return nn.Sequential(*layers)
 
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.bn(x)
-        x = F.relu(x)
-        x = F.avg_pool2d(x, 4)
-        x = torch.flatten(x, 1) # representations (512)
-        x = self.fc(x)
-        return x
-
     def extract_features(self, x):
         x = self.conv1(x)
         x = self.layer1(x)
@@ -74,4 +61,9 @@ class RotNet(nn.Module):
         x = F.relu(x)
         x = F.avg_pool2d(x, 4)
         x = torch.flatten(x, 1)
+        return x
+
+    def forward(self, x):
+        x = self.extract_features(x)
+        x = self.fc(x)
         return x
