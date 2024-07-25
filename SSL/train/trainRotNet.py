@@ -4,10 +4,9 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
 import os
-import time
 import random
 import logging
-from .utils import KNN_acc, linear_acc
+from utils import KNN_acc, linear_acc
 
 # v1 (Random Rotate)
 def rotate_img_v1(images):
@@ -24,28 +23,15 @@ def rotate_img_v1(images):
 def rotate_img_v2(images, angle):
     return torch.rot90(images, k=angle//90, dims=[2, 3])
 
-def train_rotnet(model, train_loader, test_loader, epoch_num, learning_rate, logdir, version):
-
-    logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
-        logging.FileHandler(os.path.join(logdir, version, 'training.log')),
-        logging.StreamHandler()
-    ])
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), weight_decay=5e-4, momentum=0.9, lr=learning_rate)
-    writer = SummaryWriter(f'{logdir}/{version}')
+def train_rotnet(model, train_loader, test_loader, optimizer, criterion, device, epoch_num, logdir, version):
 
     best_knn_acc = 0.0
-
+    writer = SummaryWriter(f'{logdir}/{version}')
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
                                                   milestones=[30, 60, 80],
                                                   gamma=0.2)
 
     for epoch in range(epoch_num):
-        epoch_start_time = time.time()
-
         model.train(True)
         running_loss = 0.0
 
@@ -127,19 +113,15 @@ def train_rotnet(model, train_loader, test_loader, epoch_num, learning_rate, log
         knn_accuracy = KNN_acc(model, train_loader, test_loader, device)
         writer.add_scalar('Accuracy/KNN', knn_accuracy, epoch)
 
-        epoch_end_time = time.time()
-        epoch_duration = epoch_end_time - epoch_start_time
-
         log_message = (f'Epoch [{epoch + 1}/{epoch_num}], Loss: {train_loss:.4f}, '
                        f'Val Loss: {val_loss:.4f}, Val Accuracy: {val_acc:.2f}%, '
-                       f'KNN Accuracy: {knn_accuracy:.2f}%, '
-                       f'Time: {epoch_duration:.2f} seconds')
+                       f'KNN Accuracy: {knn_accuracy:.2f}%')
         logging.info(log_message)
 
         if knn_accuracy > best_knn_acc:
             best_knn_acc = knn_accuracy
             torch.save(model.state_dict(), os.path.join(logdir, version, 'best_model.pth'))
-            print(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
+            logging.info(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
             
     # Last epoch: linear acc
     linear_accuracy = linear_acc(model, epoch, 512, 10, train_loader, test_loader, device)
