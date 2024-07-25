@@ -83,13 +83,11 @@ class ResNet(nn.Module):
         self.layer2 = self.stage(block, 128, block_num[1], first_stride=2)
         self.layer3 = self.stage(block, 256, block_num[2], first_stride=2)
         self.layer4 = self.stage(block, 512, block_num[3], first_stride=2)
-        if self.block == PreActBlock or BottleNeck:
-            self.act2 = nn.Sequential(nn.BatchNorm2d(512),
+        if self.block == PreActBlock or self.block == BottleNeck:
+            self.act2 = nn.Sequential(nn.BatchNorm2d(512*self.expansion),
                                      nn.ReLU())
         else: self.act2 = nn.Sequential()
-        # self.fc = nn.Linear(512*self.expansion, num_classes)
-
-        # add projection head
+        # fc with projection head
         self.fc = nn.Sequential(nn.Linear(512*self.expansion, 128),
                                     nn.BatchNorm1d(128),
                                     nn.ReLU(),
@@ -119,4 +117,3 @@ class ResNet(nn.Module):
         x = self.extract_features(x)
         x = self.fc(x)
         return x
-
