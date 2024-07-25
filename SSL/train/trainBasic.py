@@ -4,32 +4,15 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
 import os
-import time
 import logging
 
-def train_basic(model, train_loader, test_loader, epoch_num, learning_rate, logdir):
-    logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
-        logging.FileHandler(os.path.join(logdir, 'training.log')),
-        logging.StreamHandler()
-    ])
+def train_basic(model, train_loader, test_loader, optimizer, criterion, device, epoch_num, logdir):
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
-    criterion = nn.CrossEntropyLoss()
-    #optimizer = optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
-    optimizer = optim.Adam(model.parameters(), weight_decay=1e-4, lr=learning_rate)
-    writer = SummaryWriter(f'{logdir}')
-
-    best_val_acc = 0.0
-
-    '''lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
-                                                  milestones=[int(epoch_num * 0.5), int(epoch_num * 0.75)], 
-                                                  gamma=0.3)'''
-    
+    best_val_acc = 0.0  
+    writer = SummaryWriter(f'{logdir}')  
     lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num)
-    
+
     for epoch in range(epoch_num):
-        epoch_start_time = time.time()
 
         model.train(True)
         running_loss = 0.0
@@ -73,17 +56,13 @@ def train_basic(model, train_loader, test_loader, epoch_num, learning_rate, logd
         writer.add_scalar('Loss/val', val_loss, epoch)
         writer.add_scalar('Accuracy/val', val_acc, epoch)
 
-        epoch_end_time = time.time()
-        epoch_duration = epoch_end_time - epoch_start_time
-
         log_message = (f'Epoch [{epoch + 1}/{epoch_num}], Loss: {train_loss:.4f}, '
-                       f'Val Loss: {val_loss:.4f}, Val Accuracy: {val_acc:.2f}%, '
-                       f'Time: {epoch_duration:.2f} seconds')
+                       f'Val Loss: {val_loss:.4f}, Val Accuracy: {val_acc:.2f}%')
         logging.info(log_message)
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
-            print(f'Checkpoint saved at epoch {epoch + 1} with validation accuracy {val_acc:.2f}%')
+            logging.info(f'Checkpoint saved at epoch {epoch + 1} with validation accuracy {val_acc:.2f}%')
 
     writer.close()
