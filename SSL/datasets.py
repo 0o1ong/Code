@@ -33,16 +33,18 @@ def get_data_loaders(batch_size, dataset_name, train):
         transforms.Normalize(mean=0.5, std=0.5)
     ])
 
+    ssl = ['simclr', 'moco']
+
     if dataset_name == 'cifar10':
-        train_set = datasets.CIFAR10('./data', train=True, download=True, transform=transform if train != 'simclr' or train != 'moco' else test_transform)
-        test_set = datasets.CIFAR10('./data', train=False, download=True, transform=transform if train != 'simclr' or train != 'moco' else test_transform)
+        train_set = datasets.CIFAR10('./data', train=True, download=True, transform=transform if train not in ssl else test_transform)
+        test_set = datasets.CIFAR10('./data', train=False, download=True, transform=transform if train not in ssl else test_transform)
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True if train != 'simclr' or train != 'moco' else False) 
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True if train not in ssl else False) 
     test_loader = DataLoader(test_set, batch_size=batch_size)
 
-    if train == 'simclr':
+    if train in ssl:
         aug_train_set = datasets.CIFAR10('./data', train=True, download=True, transform=SimCLRAug(aug_transform))
         pretrain_loader = DataLoader(aug_train_set, batch_size=batch_size, shuffle=True)
         return train_loader, test_loader, pretrain_loader
