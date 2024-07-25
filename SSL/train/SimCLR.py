@@ -1,14 +1,24 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
 import os
 import time
 import logging
-from .utils import *
+from ..trash.utils import KNN_acc, linear_acc
 
-def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir, batch_size):
+# NT-Xent loss function
+def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
+    z = F.normalize(z, dim=1)
+    cos_sim = torch.matmul(z, z.T) / temperature
+    cos_sim.fill_diagonal_(float('-inf')) # 같은 이미지에 대한 유사도(sim_{i, i}) 무시 가능
+    batch_size = cos_sim.size(0) # 각 Column마다 target은 positive pair (i <-> i+batch_size) 
+    target = torch.cat([torch.arange(batch_size)+batch_size, torch.arange(batch_size)]).to(device)
+    return F.cross_entropy(cos_sim, target)
+
+def simclr(model, train_loader, test_loader, pretrain_loader, epoch_num, learning_rate, logdir):
     logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[
         logging.FileHandler(os.path.join(logdir, 'training.log')),
         logging.StreamHandler()
@@ -18,8 +28,9 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir, b
     model.to(device)
     optimizer = optim.SGD(model.parameters(), weight_decay=1e-4, momentum=0.9, nesterov=True, lr=learning_rate, dampening=False)
     writer = SummaryWriter(f'{logdir}')
+    
+    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num)
 
-    lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.6, total_steps=epoch_num, cycle_momentum=False)
     best_knn_acc = 0.0
 
     for epoch in range(epoch_num):
@@ -28,19 +39,13 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir, b
         model.train(True)
         running_loss = 0.0
 
-        for inputs, _ in train_loader:
-            aug1 = aug(inputs)
-            aug2 = aug(inputs) # Positive Pair
-            aug1, aug2 = aug1.to(device), aug2.to(device)
+        for inputs1, inputs2, _ in pretrain_loader:
+            inputs1, inputs2 = inputs1.to(device), inputs2.to(device)
 
             optimizer.zero_grad()
-            out1 = model(aug1)  # (batch_size, 512)
-            out2 = model(aug2)  # (batch_size, 512)
-            z = []
-            for i in range(batch_size):
-                z.append(out1[i])
-                z.append(out2[i])
-            z = torch.stack(z) # 2k-1, 2k -> positive pair, (2*batch_size, 512)
+            out1 = model(inputs1)  # (batch_size, 512)
+            out2 = model(inputs2)  # (batch_size, 512)
+            z = torch.cat([out1, out2]) # i, i + batch_size -> positive pair, (2*batch_size, 512)
             loss = NT_Xent(z=z, temperature=0.5, device=device)
             loss.backward()
             optimizer.step()
@@ -66,7 +71,7 @@ def simclr(model, train_loader, test_loader, epoch_num, learning_rate, logdir, b
         if knn_accuracy > best_knn_acc:
             best_knn_acc = knn_accuracy
             torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
-            print(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
+            logging.info(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
     
     linear_accuracy = linear_acc(model, epoch_num, 2048, 10, train_loader, test_loader, device)
     logging.info(f"Linear Accuracy: {linear_accuracy:.2f}%")
