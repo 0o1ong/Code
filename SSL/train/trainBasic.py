@@ -1,19 +1,12 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+from .utils import save_log, save_model
 
-import os
-import logging
-
-def train_basic(model, train_loader, test_loader, optimizer, criterion, device, epoch_num, logdir):
+def train_basic(model, train_loader, test_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
 
     best_val_acc = 0.0  
     writer = SummaryWriter(f'{logdir}')  
-    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num)
-
     for epoch in range(epoch_num):
-
         model.train(True)
         running_loss = 0.0
 
@@ -27,11 +20,9 @@ def train_basic(model, train_loader, test_loader, optimizer, criterion, device, 
             optimizer.step()
 
             running_loss += loss.item()
-        
         lr_scheduler.step()
 
         train_loss = running_loss / len(train_loader)
-        writer.add_scalar('Loss/train', train_loss, epoch)
 
         # eval
         model.eval()
@@ -52,17 +43,11 @@ def train_basic(model, train_loader, test_loader, optimizer, criterion, device, 
 
         val_acc = (correct / total) * 100
         val_loss /= len(test_loader)
-
+        
+        writer.add_scalar('Loss/train', train_loss, epoch)
         writer.add_scalar('Loss/val', val_loss, epoch)
         writer.add_scalar('Accuracy/val', val_acc, epoch)
 
-        log_message = (f'Epoch [{epoch + 1}/{epoch_num}], Loss: {train_loss:.4f}, '
-                       f'Val Loss: {val_loss:.4f}, Val Accuracy: {val_acc:.2f}%')
-        logging.info(log_message)
-
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
-            torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
-            logging.info(f'Checkpoint saved at epoch {epoch + 1} with validation accuracy {val_acc:.2f}%')
-
+        save_log(epoch, epoch_num, train_loss, val_loss=val_loss, val_acc=val_acc)
+        save_model(best_val_acc, val_acc, model, logdir, epoch)
     writer.close()
