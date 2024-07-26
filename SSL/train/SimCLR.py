@@ -1,12 +1,7 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-
-import os
-import logging
-from utils import KNN_acc, linear_acc
+from .utils import save_log, save_model, KNN_acc, linear_acc
 
 # NT-Xent loss function
 def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
@@ -17,14 +12,11 @@ def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
     target = torch.cat([torch.arange(batch_size)+batch_size, torch.arange(batch_size)]).to(device)
     return F.cross_entropy(cos_sim, target)
 
-def simclr(model, train_loader, test_loader, pretrain_loader, optimizer, device, epoch_num, logdir):
+def simclr(model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
     
     best_knn_acc = 0.0
     writer = SummaryWriter(f'{logdir}')
-    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num)
-
     for epoch in range(epoch_num):
-
         model.train(True)
         running_loss = 0.0
 
@@ -41,26 +33,16 @@ def simclr(model, train_loader, test_loader, pretrain_loader, optimizer, device,
             optimizer.step()
 
             running_loss += loss.item()
-        
         lr_scheduler.step()
 
         train_loss = running_loss / len(train_loader)
         writer.add_scalar('Loss/train', train_loss, epoch)
 
-        # Calculate KNN accuracy
-        knn_accuracy = KNN_acc(model, train_loader, test_loader, device)
-        writer.add_scalar('Accuracy/KNN', knn_accuracy, epoch)
+        # KNN accuracy
+        knn_acc = KNN_acc(model, train_loader, test_loader, device)
+        writer.add_scalar('Accuracy/KNN', knn_acc, epoch)
 
-        log_message = (f'Epoch [{epoch + 1}/{epoch_num}], Loss: {train_loss:.4f}, '
-                       f'KNN Accuracy: {knn_accuracy:.2f}%')
-        logging.info(log_message)
-
-        if knn_accuracy > best_knn_acc:
-            best_knn_acc = knn_accuracy
-            torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
-            logging.info(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
-    
-    linear_accuracy = linear_acc(model, epoch_num, 2048, 10, train_loader, test_loader, device)
-    logging.info(f"Linear Accuracy: {linear_accuracy:.2f}%")
-
+        save_log(epoch, epoch_num, train_loss, knn_acc=knn_acc)
+        save_model(best_knn_acc, knn_acc, model, logdir, epoch)
+    linear_acc(model, epoch_num, 2048, 10, train_loader, test_loader, device)
     writer.close()
