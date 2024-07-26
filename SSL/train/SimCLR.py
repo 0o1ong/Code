@@ -43,6 +43,9 @@ def simclr(model, train_loader, test_loader, pretrain_loader, optimizer, lr_sche
         writer.add_scalar('Accuracy/KNN', knn_acc, epoch)
 
         save_log(epoch, epoch_num, train_loss, knn_acc=knn_acc)
-        best_knn_acc = save_model(best_knn_acc, knn_acc, model, logdir, epoch)
+        if knn_acc > best_knn_acc:
+            save_model(knn_acc, model, logdir, epoch)
+            best_knn_acc = knn_acc
+            
     linear_acc(model, epoch_num, 2048, 10, train_loader, test_loader, device)
     writer.close()
