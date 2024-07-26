@@ -105,7 +105,7 @@ def train_rotnet(model, train_loader, test_loader, optimizer, criterion, lr_sche
         writer.add_scalar('Accuracy/KNN', knn_acc, epoch)
 
         save_log(epoch, epoch_num, train_loss, val_loss=val_loss, val_acc=val_acc, knn_acc=knn_acc)
-        save_model(best_knn_acc, knn_acc, model, logdir, epoch)
+        best_knn_acc = save_model(best_knn_acc, knn_acc, model, logdir, epoch)
     # Last epoch: linear acc
     linear_acc(model, epoch, 512, 10, train_loader, test_loader, device)
     writer.close()
