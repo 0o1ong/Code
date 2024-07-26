@@ -49,5 +49,7 @@ def train_basic(model, train_loader, test_loader, optimizer, criterion, lr_sched
         writer.add_scalar('Accuracy/val', val_acc, epoch)
 
         save_log(epoch, epoch_num, train_loss, val_loss=val_loss, val_acc=val_acc)
-        best_val_acc = save_model(best_val_acc, val_acc, model, logdir, epoch)
+        if val_acc > best_val_acc:
+            save_model(val_acc, model, logdir, epoch)
+            best_val_acc = val_acc
     writer.close()
