@@ -82,3 +82,4 @@ def save_model(best_acc, current_acc, model, logdir, epoch):
         best_acc = current_acc
         torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
         logging.info(f'Checkpoint saved at epoch {epoch + 1} with accuracy {current_acc:.2f}%')
+        return best_acc
