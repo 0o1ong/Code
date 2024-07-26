@@ -8,18 +8,18 @@ class ViT(nn.Module):
         super().__init__()
         self.embedded_patch = PatchEmbedding(in_dim, patch_size, d) # (B, C, H, W) -> (B, N, D)
         num_patches = (img_size//patch_size)**2 # N
-        self.cls_token = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, 1, d), std=0.02))
-        self.pos_embedding = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, num_patches, d), std=0.02))
+        self.cls_token = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, 1, d), std=.002))
+        self.pos_embedding = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, num_patches, d), std=.002))
     
         self.layers = nn.ModuleList([TransformerEncoder(d=d, num_heads=num_heads) for _ in range(num_layers)]) # input & output size: (B, N, D)
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(d),
-            # nn.Linear(d, num_classes)
+            nn.Linear(d, num_classes)
             # Proj head
-            nn.Linear(d, d//4),
-            # nn.BatchNorm1d(d//4),
-            nn.ReLU(), 
-            nn.Linear(d//4, num_classes)
+            #nn.Linear(d, d//4),
+            #nn.LayerNorm(d//4),
+            #nn.ReLU(), 
+            #nn.Linear(d//4, num_classes)
         )
 
     def forward(self, x):
