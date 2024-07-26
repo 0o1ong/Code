@@ -1,12 +1,8 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-import os
 import random
-import logging
-from utils import KNN_acc, linear_acc
+from .utils import save_log, save_model, KNN_acc, linear_acc
 
 # v1 (Random Rotate)
 def rotate_img_v1(images):
@@ -23,14 +19,10 @@ def rotate_img_v1(images):
 def rotate_img_v2(images, angle):
     return torch.rot90(images, k=angle//90, dims=[2, 3])
 
-def train_rotnet(model, train_loader, test_loader, optimizer, criterion, device, epoch_num, logdir, version):
+def train_rotnet(model, train_loader, test_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir, version):
 
     best_knn_acc = 0.0
     writer = SummaryWriter(f'{logdir}/{version}')
-    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
-                                                  milestones=[30, 60, 80],
-                                                  gamma=0.2)
-
     for epoch in range(epoch_num):
         model.train(True)
         running_loss = 0.0
@@ -61,11 +53,9 @@ def train_rotnet(model, train_loader, test_loader, optimizer, criterion, device,
             optimizer.step()
 
             running_loss += loss.item()
-
         lr_scheduler.step()
 
         train_loss = running_loss / len(train_loader)
-        writer.add_scalar('Loss/train', train_loss, epoch)
 
         # eval
         model.eval()
@@ -106,25 +96,16 @@ def train_rotnet(model, train_loader, test_loader, optimizer, criterion, device,
         val_acc = (correct / total) * 100
         val_loss /= len(test_loader)
 
+        writer.add_scalar('Loss/train', train_loss, epoch)
         writer.add_scalar('Loss/val', val_loss, epoch)
         writer.add_scalar('Accuracy/val', val_acc, epoch)
 
         # KNN accuracy
-        knn_accuracy = KNN_acc(model, train_loader, test_loader, device)
-        writer.add_scalar('Accuracy/KNN', knn_accuracy, epoch)
+        knn_acc = KNN_acc(model, train_loader, test_loader, device)
+        writer.add_scalar('Accuracy/KNN', knn_acc, epoch)
 
-        log_message = (f'Epoch [{epoch + 1}/{epoch_num}], Loss: {train_loss:.4f}, '
-                       f'Val Loss: {val_loss:.4f}, Val Accuracy: {val_acc:.2f}%, '
-                       f'KNN Accuracy: {knn_accuracy:.2f}%')
-        logging.info(log_message)
-
-        if knn_accuracy > best_knn_acc:
-            best_knn_acc = knn_accuracy
-            torch.save(model.state_dict(), os.path.join(logdir, version, 'best_model.pth'))
-            logging.info(f'Checkpoint saved at epoch {epoch + 1} with KNN accuracy {knn_accuracy:.2f}%')
-            
+        save_log(epoch, epoch_num, train_loss, val_loss=val_loss, val_acc=val_acc, knn_acc=knn_acc)
+        save_model(best_knn_acc, knn_acc, model, logdir, epoch)
     # Last epoch: linear acc
-    linear_accuracy = linear_acc(model, epoch, 512, 10, train_loader, test_loader, device)
-    logging.info(f"Linear Accuracy: {linear_accuracy:.2f}%")
-
+    linear_acc(model, epoch, 512, 10, train_loader, test_loader, device)
     writer.close()
