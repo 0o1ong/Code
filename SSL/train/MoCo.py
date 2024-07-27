@@ -56,7 +56,7 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
                 k_param.data.copy_(m*k_param + (1.0-m)*q_param)
 
             # queue.size(): (dict_size, dim)
-            queue = torch.cat([queue[current_batch_size:, :], k])
+            queue = torch.cat([queue[current_batch_size:], k])
 
         lr_scheduler.step()
 
