@@ -10,13 +10,13 @@ from utils import log_setting, LinearWarmupCosineAnnealingLR
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=512)
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
+    parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--learning_rate', type=float, default=0.003)
     parser.add_argument('--epoch_num', type=int, default=200)
-    parser.add_argument('--logdir', type=str, default='log') 
+    parser.add_argument('--logdir', type=str, default='log_moco') 
     parser.add_argument('--model', type=str, default='resnet')
     parser.add_argument('--dataset', type=str, default='cifar10')
-    parser.add_argument('--train', type=str, default='simclr')
+    parser.add_argument('--train', type=str, default='moco')
     
     parser.add_argument('--version', type=str, default='v1') # for --train rotation (v1 / v2 / v3)
     
@@ -44,19 +44,19 @@ def main():
             lr_scheduler = LinearWarmupCosineAnnealingLR(optimizer, warmup_steps=10, total_steps=args.epoch_num)
             train(args.train, model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, args.epoch_num, args.logdir)
         elif args.train == 'moco':
-            # batch_size = 256
-            f_q = get_model(args.model, BottleNeck, [3, 4, 6, 3], num_classes=128).to(device) # Query Encoder
-            f_k = get_model(args.model, BottleNeck, [3, 4, 6, 3], num_classes=128).to(device) # Key Encoder
-            optimizer = optim.SGD(f_q.parameters(), weight_decay=1e-4, momentum=0.9, lr=0.03)
+            # batch_size = 256, epoch_num=200 
+            f_q = get_model(args.model, BottleNeck, [3, 4, 6, 3], 128).to(device) # Query Encoder
+            f_k = get_model(args.model, BottleNeck, [3, 4, 6, 3], 128).to(device) # Key Encoder
+            optimizer = optim.SGD(f_q.parameters(), weight_decay=1e-4, momentum=0.9, lr=args.learning_rate)
             lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
                                                   milestones=[120, 160], 
                                                   gamma=0.1)
             train(args.train, f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, args.epoch_num, args.logdir)
         else:
             model = get_model(args.model).to(device)
-            optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+            optimizer = optim.AdamW(model.parameters(), lr=args.learning_rate)
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epoch_num)
-            # lr_scheduler = LinearWarmupCosineAnnealingLR(optimizer, warmup_steps=100, epoch_num=args.epoch_num)
+            # lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 150], gamma=0.1) # for vit
             train(args.train, model, train_loader, test_loader, optimizer, criterion, lr_scheduler, device, args.epoch_num, args.logdir)
         
 if __name__ == '__main__': 
