@@ -5,12 +5,13 @@ from .utils import save_log, save_model, KNN_acc, linear_acc
 
 def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num=200, logdir='log_moco'):
     # batch_size=256
-    dim=128
+    dim=512
     dict_size=16384
     m=0.999
     t=0.07
     
     queue = torch.randn(dict_size, dim).to(device) # (64*256, 128) 랜덤 초기화 (dict_size = 64 * batch_size)
+    queue = F.normalize(queue, dim=1)
 
     for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
         k_param.data.copy_(q_param.data)
@@ -53,9 +54,8 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
             running_loss += loss.item()
 
             # Momentum update
-            with torch.no_grad():
-                for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
-                    k_param.data.copy_(m * k_param.data + (1.0 - m) * q_param.data)
+            for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
+                k_param.data.copy_(m * k_param.data + (1.0 - m) * q_param.data)
 
             # queue.size(): (dict_size, dim)
             queue = torch.cat([queue[current_batch_size:], k])
@@ -73,5 +73,4 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
         if knn_acc > best_knn_acc:
             save_model(knn_acc, f_q, logdir, epoch)
             best_knn_acc = knn_acc
-    linear_acc(f_q, epoch_num, 2048, 10, train_loader, test_loader, device)
     writer.close()
