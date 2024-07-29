@@ -14,19 +14,18 @@ def log_setting(logdir):
                         ])
 
 class LinearWarmupCosineAnnealingLR():
-    def __init__(self, optimizer, max_lr, warmup_steps, total_steps):
+    def __init__(self, optimizer, warmup_steps, total_steps):
         self.optimizer = optimizer
-        self.max_lr = max_lr
         self.warmup_steps = warmup_steps
         self.total_steps = total_steps
         self.scheduler = LambdaLR(optimizer, lr_lambda=self.schedule)
 
     def schedule(self, epoch):
         if epoch <= self.warmup_steps:
-            return (epoch / self.warmup_steps) * self.max_lr
+            return epoch / self.warmup_steps
         else:
             t = (epoch - self.warmup_steps) / (self.total_steps - self.warmup_steps)
-            return 0.5 * (1 + math.cos(math.pi * t)) * self.max_lr
+            return 0.5 * (1 + math.cos(math.pi * t))
     
     def step(self):
         self.scheduler.step()
