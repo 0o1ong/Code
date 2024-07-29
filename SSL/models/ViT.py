@@ -4,22 +4,22 @@ import torch.nn as nn
 
 # Vision Transformer
 class ViT(nn.Module):
-    def __init__(self, in_dim=3, img_size=32, patch_size=4, d=384, num_layers=6, num_heads=6, num_classes=10):
+    def __init__(self, in_dim=3, img_size=32, patch_size=4, d=256, num_layers=6, num_heads=8, num_classes=10):
         super().__init__()
         self.embedded_patch = PatchEmbedding(in_dim, patch_size, d) # (B, C, H, W) -> (B, N, D)
         num_patches = (img_size//patch_size)**2 # N
-        self.cls_token = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, 1, d), std=.002))
-        self.pos_embedding = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, num_patches, d), std=.002))
+        self.cls_token = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, 1, d), std=0.02))
+        self.pos_embedding = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, num_patches, d), std=0.02))
     
         self.layers = nn.ModuleList([TransformerEncoder(d=d, num_heads=num_heads) for _ in range(num_layers)]) # input & output size: (B, N, D)
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(d),
-            nn.Linear(d, num_classes)
+            # nn.Linear(d, num_classes)
             # Proj head
-            #nn.Linear(d, d//4),
-            #nn.LayerNorm(d//4),
-            #nn.ReLU(), 
-            #nn.Linear(d//4, num_classes)
+            nn.Linear(d, d//4),
+            nn.LayerNorm(d//4),
+            nn.ReLU(), 
+            nn.Linear(d//4, num_classes)
         )
 
     def forward(self, x):
@@ -36,7 +36,7 @@ class ViT(nn.Module):
     
 # input image를 D차원의 벡터 N개로 (패치 임베딩)
 class PatchEmbedding(nn.Module):
-    def __init__(self, in_dim=3, patch_size=4, d=384):
+    def __init__(self, in_dim=3, patch_size=4, d=256):
         super().__init__()
         self.patch_size = patch_size
         self.proj = nn.Conv2d(in_dim, d, kernel_size=patch_size, stride=patch_size)
@@ -49,7 +49,7 @@ class PatchEmbedding(nn.Module):
 
 # MultiHead Self Attention
 class MSA(nn.Module):
-    def __init__(self, d=384, num_heads=6):
+    def __init__(self, d=256, num_heads=8):
         super().__init__()
         self.num_heads = num_heads
         self.d_h = d // num_heads # head별 q, k, v 차원
@@ -73,7 +73,7 @@ class MSA(nn.Module):
 
 # Transformer Encoder
 class TransformerEncoder(nn.Module):
-    def __init__(self, d=384, d_mlp=1536, num_heads=6):
+    def __init__(self, d=256, d_mlp=512, num_heads=8):
         super().__init__()
         self.ln1 = nn.LayerNorm(d)
         self.msa = MSA(d, num_heads)
@@ -81,9 +81,7 @@ class TransformerEncoder(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(d, d_mlp),
             nn.GELU(),
-            # nn.Dropout(0.1),
-            nn.Linear(d_mlp, d),
-            # nn.Dropout(0.1)
+            nn.Linear(d_mlp, d)
         )
     
     def forward(self, x):
