@@ -44,9 +44,9 @@ def main():
             lr_scheduler = LinearWarmupCosineAnnealingLR(optimizer, warmup_steps=10, total_steps=args.epoch_num)
             train(args.train, model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, args.epoch_num, args.logdir)
         elif args.train == 'moco':
-            # batch_size = 256, epoch_num=200 
-            f_q = get_model(args.model, BottleNeck, [3, 4, 6, 3], 128).to(device) # Query Encoder
-            f_k = get_model(args.model, BottleNeck, [3, 4, 6, 3], 128).to(device) # Key Encoder
+            # batch_size = 256, epoch_num=200  
+            f_q = get_model(args.model, PreActBlock, [2, 2, 2, 2], 512).to(device) # Query Encoder
+            f_k = get_model(args.model, PreActBlock, [2, 2, 2, 2], 512).to(device) # Key Encoder
             optimizer = optim.SGD(f_q.parameters(), weight_decay=1e-4, momentum=0.9, lr=args.learning_rate)
             lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, 
                                                   milestones=[120, 160], 
