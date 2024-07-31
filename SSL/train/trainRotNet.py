@@ -2,7 +2,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 import random
-from .utils import save_log, save_model, KNN_acc, linear_acc
+from .utils import save_log, save_model, KNN_acc
 
 # v1 (Random Rotate)
 def rotate_img_v1(images):
@@ -108,6 +108,6 @@ def train_rotnet(model, train_loader, test_loader, optimizer, criterion, lr_sche
         if knn_acc > best_knn_acc:
             save_model(knn_acc, model, logdir, epoch)
             best_knn_acc = knn_acc
-    # Last epoch: linear acc
-    linear_acc(model, epoch, 512, 10, train_loader, test_loader, device)
+
+    #linear_acc(model, epoch, 512, 10, train_loader, test_loader, device)
     writer.close()
