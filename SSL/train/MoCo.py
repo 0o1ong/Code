@@ -5,11 +5,11 @@ from .utils import save_log, save_model, KNN_acc
 
 def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num=200, logdir='log_moco'):
     dim=512
-    dict_size=16384
-    m=0.999
-    t=0.07
+    dict_size=4096
+    m=0.99
+    t=0.1
     
-    queue = torch.randn(dict_size, dim).to(device) # (64*256, 512) 랜덤 초기화 (dict_size = 64 * batch_size)
+    queue = torch.randn(dict_size, dim).to(device)
     queue = F.normalize(queue, dim=1)
 
     for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
@@ -26,15 +26,15 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
         for inputs, _ in pretrain_loader:
             x_q, x_k = inputs
             x_q, x_k = x_q.to(device), x_k.to(device) # Positive Pair
-            current_batch_size = x_q.size(0) # 마지막 배치 크기: 80 (!= 256)
+            current_batch_size = x_q.size(0)
             
             optimizer.zero_grad()
             
-            q = f_q(x_q) # (batch size, dim) -> (256, 512), 512차원 쿼리 256개
-            q = F.normalize(q, dim=1)
-            k = f_k(x_k) # 128차원의 키 256개
+            q = f_q(x_q) # (batch size, dim)
+            q = F.normalize(q, dim=1) # "output vector is normalized by its L2-norm"
+            k = f_k(x_k)
             k = F.normalize(k, dim=1)
-            k = k.detach() # no gradient to keys
+            k = k.detach() # no gradient
 
             # positive logits
             # batch matrix multiplication -> positive pair의 유사도 (q*k_+)
@@ -72,5 +72,6 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
         if knn_acc > best_knn_acc:
             save_model(knn_acc, f_q, logdir, epoch)
             best_knn_acc = knn_acc
-            
+    
+    #linear_acc(f_q, epoch_num, 512, 10, train_loader, test_loader, device)
     writer.close()
