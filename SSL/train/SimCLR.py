@@ -47,5 +47,4 @@ def simclr(model, train_loader, test_loader, pretrain_loader, optimizer, lr_sche
             save_model(knn_acc, model, logdir, epoch)
             best_knn_acc = knn_acc
             
-    # linear_acc(model, epoch_num, 512, 10, train_loader, test_loader, device)
     writer.close()
