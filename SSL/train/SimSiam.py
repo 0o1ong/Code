@@ -6,6 +6,7 @@ from .utils import save_log, save_model, KNN_acc
 
 class Predictor(nn.Module):
     def __init__(self, in_dim, num_classes):
+        super().__init__()
         self.fc = nn.Sequential(nn.Linear(in_dim, 2048),
                                     nn.BatchNorm1d(2048),
                                     nn.ReLU(),
@@ -20,7 +21,8 @@ def neg_cos(p, z):
     return -(p*z).sum(dim=1).mean()
 
 def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
-    pred_model = nn.Sequential(model, Predictor(512, 512).to(device)) # encoder with predictor
+    predictor = Predictor(512, 512).to(device)
+    pred_model = nn.Sequential(model, predictor) # encoder with predictor
     
     best_knn_acc = 0.0
     writer = SummaryWriter(f'{logdir}')
