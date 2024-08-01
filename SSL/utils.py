@@ -17,9 +17,9 @@ class LinearWarmupCosineAnnealingLR(LambdaLR):
     def __init__(self, optimizer, warmup_steps, total_steps):
         self.warmup_steps = warmup_steps
         self.total_steps = total_steps
-        super().__init__(optimizer, lr_lambda=self.get_lr_lambda)
+        super().__init__(optimizer, lr_lambda=self.schedule)
          
-    def get_lr_lambda(self, step):
+    def schedule(self, step):
         if step <= self.warmup_steps:
             return step / self.warmup_steps
         else:
