@@ -54,7 +54,7 @@ def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_sch
 
         save_log(epoch, epoch_num, train_loss, knn_acc=knn_acc)
         if knn_acc > best_knn_acc:
-            save_model(knn_acc, model, logdir, epoch)
+            save_model(knn_acc, pred_model, logdir, epoch)
             best_knn_acc = knn_acc
 
     writer.close()
