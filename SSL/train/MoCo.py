@@ -10,7 +10,9 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
     t=0.1
     
     queue = torch.randn(dict_size, dim).to(device)
+    queue.requires_grad = False
     queue = F.normalize(queue, dim=1)
+    ptr = 0
 
     for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
         k_param.data.copy_(q_param.data)
@@ -54,10 +56,11 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
 
             # Momentum update
             for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
-                k_param.data.copy_(m * k_param.data + (1.0 - m) * q_param.data)
+                k_param.data.mul_(m).add_(q_param.data, alpha=1-m)
 
             # queue.size(): (dict_size, dim)
-            queue = torch.cat([queue[current_batch_size:], k])
+            queue[ptr:ptr+k.size()[0]] = k
+            ptr = (ptr+k.size()[0]) % dict_size
 
         lr_scheduler.step()
 
