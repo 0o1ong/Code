@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
@@ -6,6 +5,7 @@ from .utils import save_log, save_model, KNN_acc
 
 class Predictor(nn.Module):
     def __init__(self, in_dim, num_classes):
+        super().__init__()
         self.fc = nn.Sequential(nn.Linear(in_dim, 2048),
                                     nn.BatchNorm1d(2048),
                                     nn.ReLU(),
@@ -16,11 +16,12 @@ class Predictor(nn.Module):
 def mse_loss(x, y):
     x = F.normalize(x, dim=1)
     y = F.normalize(y, dim=1)
-    return -2 * (x*y).sum(dim=1)
+    return -2 * (x*y).sum(dim=1).mean()
 
 def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
-    m=0.99
-    online = nn.Sequential(backbone, Predictor(512, 512).to(device)) # add prediction layer
+    tau=0.99
+    predictor = Predictor(512, 512).to(device)
+    online = nn.Sequential(backbone, predictor) # add prediction layer
 
     for online_param, target_param in zip(backbone.parameters(), target.parameters()):
         target_param.data.copy_(online_param.data)
@@ -38,10 +39,10 @@ def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer
             input1, input2 = input1.to(device), input2.to(device)
             
             optimizer.zero_grad()
-            
+
             pred1, pred2 = online(input1), online(input2)
             targ1, targ2 = target(input2).detach(), target(input1).detach()
-            
+
             loss = mse_loss(pred1, targ1) + mse_loss(pred2, targ2)
             loss.backward()
             optimizer.step() # online network update
@@ -50,7 +51,7 @@ def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer
 
             # EMA
             for online_param, target_param in zip(backbone.parameters(), target.parameters()):
-                target_param.data.mul_(m).add_(online_param.data, alpha=1-m)
+                target_param.data.mul_(tau).add_(online_param.data, alpha=1-tau)
 
         lr_scheduler.step()
 
