@@ -58,7 +58,7 @@ def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer
         writer.add_scalar('Loss/train', train_loss, epoch)
 
         # Calculate KNN accuracy
-        knn_acc = KNN_acc(online, train_loader, test_loader, device)
+        knn_acc = KNN_acc(backbone, train_loader, test_loader, device)
         writer.add_scalar('Accuracy/KNN', knn_acc, epoch)
 
         save_log(epoch, epoch_num, train_loss, knn_acc=knn_acc)
