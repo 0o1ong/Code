@@ -14,8 +14,8 @@ def represent(model, data_loader, device):
             outputs = model.extract_features(inputs)
             features.append(outputs)
             labels.append(targets)
-    features = torch.cat(features)
-    labels = torch.cat(labels)
+        features = torch.cat(features)
+        labels = torch.cat(labels)
     return features, labels
 
 # KNN accuracy
