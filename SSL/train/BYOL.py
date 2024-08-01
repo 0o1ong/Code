@@ -39,11 +39,8 @@ def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer
             
             optimizer.zero_grad()
             
-            pred1 = online(input1)
-            targ1 = target(input2).detach()
-
-            pred2 = online(input2)
-            targ2 = target(input1).detach()
+            pred1, pred2 = online(input1), online(input2)
+            targ1, targ2 = target(input2).detach(), target(input1).detach()
             
             loss = mse_loss(pred1, targ1) + mse_loss(pred2, targ2)
             loss.backward()
