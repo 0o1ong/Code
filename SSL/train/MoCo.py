@@ -3,15 +3,14 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from .utils import save_log, save_model, KNN_acc
 
-def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
+def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num=200, logdir='log_moco'):
     dim=512
     dict_size=4096
     m=0.99
     t=0.1
     
-    queue = torch.randn(dict_size, dim).to(device)
+    queue = F.normalize(torch.randn(dict_size, dim).to(device)).detach()
     queue.requires_grad = False
-    queue = F.normalize(queue, dim=1)
     ptr = 0
 
     for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
@@ -32,11 +31,8 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
             
             optimizer.zero_grad()
             
-            q = f_q(x_q) # (batch size, dim)
-            q = F.normalize(q, dim=1)
-            k = f_k(x_k)
-            k = F.normalize(k, dim=1)
-            k = k.detach() # no gradient
+            q = F.normalize(f_q(x_q)) # (batch size, dim)
+            k = F.normalize(f_k(x_k)).detach() 
 
             # positive logits
             # batch matrix multiplication -> positive pair의 유사도 (q*k_+)
@@ -58,10 +54,15 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
             for q_param, k_param in zip(f_q.parameters(), f_k.parameters()):
                 k_param.data.mul_(m).add_(q_param.data, alpha=1-m)
 
-            # queue.size(): (dict_size, dim)
-            queue[ptr:ptr+k.size()[0]] = k
-            ptr = (ptr+k.size()[0]) % dict_size
-
+            # Dictionary update // queue = torch.cat([queue[current_batch_size:], k])
+            if ptr+current_batch_size <= dict_size:
+                queue[ptr:ptr+current_batch_size] = k
+            else:
+                end_idx = dict_size - ptr
+                queue[ptr:] = k[:end_idx]
+                queue[:current_batch_size - end_idx] = k[end_idx:]
+            ptr = (ptr + current_batch_size) % dict_size
+ 
         lr_scheduler.step()
 
         train_loss = running_loss / len(pretrain_loader)
@@ -75,5 +76,4 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
         if knn_acc > best_knn_acc:
             save_model(knn_acc, f_q, logdir, epoch)
             best_knn_acc = knn_acc
-
     writer.close()
