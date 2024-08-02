@@ -4,24 +4,24 @@ from torch.utils.tensorboard import SummaryWriter
 from .utils import save_log, save_model, KNN_acc
 
 class Predictor(nn.Module):
-    def __init__(self, in_dim, num_classes):
+    def __init__(self, in_dim=256, hidden_dim=2048, out_dim=256):
         super().__init__()
-        self.fc = nn.Sequential(nn.Linear(in_dim, 2048),
-                                    nn.BatchNorm1d(2048),
+        self.fc = nn.Sequential(nn.Linear(in_dim, hidden_dim),
+                                    nn.BatchNorm1d(hidden_dim),
                                     nn.ReLU(),
-                                    nn.Linear(2048, num_classes))
+                                    nn.Linear(hidden_dim, out_dim))
     def forward(self, x):
         return self.fc(x)
 
 def mse_loss(x, y):
-    x = F.normalize(x, dim=1)
-    y = F.normalize(y, dim=1)
-    return -2 * (x*y).sum(dim=1).mean()
+    x = F.normalize(x)
+    y = F.normalize(y)
+    #return F.mse_loss(x, y)
+    return -2 * (x * y).sum(dim=-1).mean()
 
 def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
     tau=0.99
-    predictor = Predictor(512, 512).to(device)
-    online = nn.Sequential(backbone, predictor) # add prediction layer
+    online = nn.Sequential(backbone, Predictor().to(device)) # add prediction layer
 
     for online_param, target_param in zip(backbone.parameters(), target.parameters()):
         target_param.data.copy_(online_param.data)
