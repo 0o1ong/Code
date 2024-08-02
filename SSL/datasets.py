@@ -33,11 +33,23 @@ def get_data_loaders(batch_size, dataset_name, train):
         transforms.Normalize(mean=0.5, std=0.5)
     ])
 
-    ssl = ['simclr', 'moco']
+    ssl = ['simclr', 'moco', 'byol', 'simsiam']
 
     if dataset_name == 'cifar10':
         train_set = datasets.CIFAR10('./data', train=True, download=True, transform=transform if train not in ssl else test_transform)
         test_set = datasets.CIFAR10('./data', train=False, download=True, transform=transform if train not in ssl else test_transform)
+        if train in ssl:
+            aug_train_set = datasets.CIFAR10('./data', train=True, download=True, transform=SimCLRAug(aug_transform))
+    elif dataset_name == 'cifar100':
+        train_set = datasets.CIFAR100('./data', train=True, download=True, transform=transform if train not in ssl else test_transform)
+        test_set = datasets.CIFAR100('./data', train=False, download=True, transform=transform if train not in ssl else test_transform)
+        if train in ssl:
+            aug_train_set = datasets.CIFAR100('./data', train=True, download=True, transform=SimCLRAug(aug_transform))
+    elif dataset_name == 'stl10':
+        train_set = datasets.STL10('./data', train=True, download=True, transform=transform if train not in ssl else test_transform)
+        test_set = datasets.STL10('./data', train=False, download=True, transform=transform if train not in ssl else test_transform)
+        if train in ssl:
+            aug_train_set = datasets.STL10('./data', train=True, download=True, transform=SimCLRAug(aug_transform))
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
 
@@ -45,7 +57,6 @@ def get_data_loaders(batch_size, dataset_name, train):
     test_loader = DataLoader(test_set, batch_size=batch_size)
 
     if train in ssl:
-        aug_train_set = datasets.CIFAR10('./data', train=True, download=True, transform=SimCLRAug(aug_transform))
         pretrain_loader = DataLoader(aug_train_set, batch_size=batch_size, shuffle=True)
         return train_loader, test_loader, pretrain_loader
     else:
