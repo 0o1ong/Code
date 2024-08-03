@@ -7,6 +7,10 @@ class ViT(nn.Module):
     def __init__(self, in_dim=3, img_size=32, patch_size=4, d=256, num_layers=6, num_heads=8, out_dim=10):
         super().__init__()
         self.embedded_patch = PatchEmbedding(in_dim, patch_size, d) # (B, C, H, W) -> (B, N, D)
+
+        '''for param in self.embedded_patch.parameters():
+            param.requires_grad = False''' # for SSL
+
         num_patches = (img_size//patch_size)**2 # N
         self.cls_token = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, 1, d), std=0.02))
         self.pos_embedding = nn.Parameter(nn.init.trunc_normal_(torch.empty(1, num_patches, d), std=0.02))
