@@ -8,21 +8,6 @@ from datasets import get_data_loaders
 from train import train
 from utils import log_setting, LinearWarmupCosineAnnealingLR
 
-# lr 줄여서 다시 돌려보기..
-# python main.py --logdir=cifar10_resnet18_simsiam --train=simsiam && python main.py --logdir=cifar10_resnet18_byol --train=byol 
-
-
-# && python main.py --logdir=cifar100_resnet18_simsiam --train=simsiam && python main.py --logdir=cifar100_resnet18_byol --train=byol 
-# && python main.py --logdir=stl10_resnet18_simsiam --train=simsiam && python main.py --logdir=stl10_resnet18_byol --train=byol
-
-# python main.py --logdir=cifar10_vit_simclr --train=simclr && python main.py --logdir=cifar10_vit_moco --train=moco 
-
-# && python main.py --logdir=cifar10_vit_simsiam --train=simsiam && python main.py --logdir=cifar10_vit_byol --train=byol 
-# python main.py --logdir=cifar100_vit_simclr --train=simclr && python main.py --logdir=cifar100_vit_moco --train=moco
-# && python main.py --logdir=cifar100_vit_simsiam --train=simsiam && python main.py --logdir=cifar100_vit_byol --train=byol 
-# python main.py --logdir=stl10_vit_simclr --train=simclr && python main.py --logdir=stl10_vit_moco --train=moco
-# && python main.py --logdir=stl10_vit_simsiam --train=simsiam && python main.py --logdir=stl10_vit_byol --train=byol 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=512)
