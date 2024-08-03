@@ -5,14 +5,14 @@ from .ViT import ViT
 
 __all__ = ['LeNet5', 'BasicBlock', 'PreActBlock', 'BottleNeck', 'ResNet', 'RotNet', 'ViT', 'get_model']
 
-def get_model(model_name, *args):
+def get_model(model_name, *args, **kwargs):
     if model_name == 'lenet':
-        return LeNet5(*args)
+        return LeNet5(*args, **kwargs)
     elif model_name == 'resnet':
-        return ResNet(*args)
+        return ResNet(*args, **kwargs)
     elif model_name == 'rotnet':
-        return RotNet(*args)
+        return RotNet(*args, **kwargs)
     elif model_name == 'vit':
-        return ViT(*args)
+        return ViT(*args, **kwargs)
     else:
         raise ValueError(f"Unknown model: {model_name}")
