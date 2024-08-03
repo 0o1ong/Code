@@ -4,7 +4,7 @@ import torch.nn as nn
 
 # Vision Transformer
 class ViT(nn.Module):
-    def __init__(self, in_dim=3, img_size=32, patch_size=4, d=256, num_layers=6, num_heads=8, num_classes=10):
+    def __init__(self, in_dim=3, img_size=32, patch_size=4, d=256, num_layers=6, num_heads=8, out_dim=10):
         super().__init__()
         self.embedded_patch = PatchEmbedding(in_dim, patch_size, d) # (B, C, H, W) -> (B, N, D)
         num_patches = (img_size//patch_size)**2 # N
@@ -14,15 +14,15 @@ class ViT(nn.Module):
         self.layers = nn.ModuleList([TransformerEncoder(d=d, num_heads=num_heads) for _ in range(num_layers)]) # input & output size: (B, N, D)
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(d),
-            # nn.Linear(d, num_classes)
+            # nn.Linear(d, out_dim)
             # Proj head
             nn.Linear(d, d//4),
             nn.LayerNorm(d//4),
             nn.ReLU(), 
-            nn.Linear(d//4, num_classes)
+            nn.Linear(d//4, out_dim)
         )
-
-    def forward(self, x):
+    
+    def extract_features(self, x):
         B, _, _, _ = x.shape
         x = self.embedded_patch(x) # (B, N, D)
         x += self.pos_embedding
@@ -31,6 +31,10 @@ class ViT(nn.Module):
         for layer in self.layers:
             z = layer(z)
         last_cls_token = z[:, 0] # z_L^0 (B, D)
+        return last_cls_token
+
+    def forward(self, x):
+        last_cls_token = self.extract_features(x)
         y = self.mlp_head(last_cls_token)
         return y # (B, num_classes)
     
