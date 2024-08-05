@@ -4,7 +4,7 @@ from torch.utils.tensorboard import SummaryWriter
 from .utils import save_log, save_model, KNN_acc
 
 class Predictor(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=2048, out_dim=256):
+    def __init__(self, in_dim=512, hidden_dim=2048, out_dim=512):
         super().__init__()
         self.fc = nn.Sequential(nn.Linear(in_dim, hidden_dim),
                                     nn.BatchNorm1d(hidden_dim),
@@ -16,7 +16,6 @@ class Predictor(nn.Module):
 def mse_loss(x, y):
     x = F.normalize(x)
     y = F.normalize(y)
-    #return F.mse_loss(x, y)
     return -2 * (x * y).sum(dim=-1).mean()
 
 def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
