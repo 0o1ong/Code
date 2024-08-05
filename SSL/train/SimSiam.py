@@ -5,12 +5,12 @@ from torch.utils.tensorboard import SummaryWriter
 from .utils import save_log, save_model, KNN_acc
 
 class Predictor(nn.Module):
-    def __init__(self, in_dim, num_classes):
+    def __init__(self, in_dim=512, hidden_dim=2048, out_dim=512):
         super().__init__()
-        self.fc = nn.Sequential(nn.Linear(in_dim, 2048),
-                                    nn.BatchNorm1d(2048),
+        self.fc = nn.Sequential(nn.Linear(in_dim, hidden_dim),
+                                    nn.BatchNorm1d(hidden_dim),
                                     nn.ReLU(),
-                                    nn.Linear(2048, num_classes))
+                                    nn.Linear(hidden_dim, out_dim))
     def forward(self, x):
         return self.fc(x)
 
@@ -18,11 +18,10 @@ class Predictor(nn.Module):
 def neg_cos(p, z):
     p = F.normalize(p, dim=1)
     z = F.normalize(z, dim=1)
-    return -(p*z).sum(dim=1).mean()
+    return -(p * z).sum(dim=1).mean()
 
 def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
-    predictor = Predictor(512, 512).to(device)
-    pred_model = nn.Sequential(model, predictor) # encoder with predictor
+    pred_model = nn.Sequential(model, Predictor().to(device)) # encoder with predictor
     
     best_knn_acc = 0.0
     writer = SummaryWriter(f'{logdir}')
