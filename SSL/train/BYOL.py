@@ -16,7 +16,7 @@ class Predictor(nn.Module):
 def mse_loss(x, y):
     x = F.normalize(x)
     y = F.normalize(y)
-    return -2 * (x * y).sum(dim=-1).mean()
+    return 2 - 2 * (x * y).sum(dim=-1).mean()
 
 def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
     tau=0.99
