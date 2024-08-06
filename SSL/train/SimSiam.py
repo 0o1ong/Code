@@ -22,6 +22,11 @@ def neg_cos(p, z):
 
 def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
     pred_model = nn.Sequential(model, Predictor().to(device)) # encoder with predictor
+
+    ###
+    optimizer = optim.Adam(pred_model.parameters(), weight_decay=1e-6, lr=1e-3)
+    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100, eta_min=1e-5)
+    ###
     
     best_knn_acc = 0.0
     writer = SummaryWriter(f'{logdir}')
