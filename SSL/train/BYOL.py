@@ -22,6 +22,11 @@ def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer
     tau=0.99
     online = nn.Sequential(backbone, Predictor().to(device)) # add prediction layer
 
+    ###
+    optimizer = optim.Adam(online.parameters(), weight_decay=1e-6, lr=1e-3)
+    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100, eta_min=1e-5)
+    ###
+
     for online_param, target_param in zip(backbone.parameters(), target.parameters()):
         target_param.data.copy_(online_param.data)
         target_param.requires_grad = False
