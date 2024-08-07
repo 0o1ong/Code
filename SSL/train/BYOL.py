@@ -24,7 +24,7 @@ def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer
 
     ###
     optimizer = optim.Adam(online.parameters(), weight_decay=1e-6, lr=1e-3)
-    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100, eta_min=1e-5)
+    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num, eta_min=1e-5)
     ###
 
     for online_param, target_param in zip(backbone.parameters(), target.parameters()):
