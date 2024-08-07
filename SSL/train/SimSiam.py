@@ -15,14 +15,17 @@ class Predictor(nn.Module):
         return self.fc(x)
 
 # negative cosine similarity
-def neg_cos(p, z):
+def D(p, z):
+    z = z.detach() # stop gradient
     p = F.normalize(p, dim=1)
     z = F.normalize(z, dim=1)
-    return -(p * z).sum(dim=1).mean()
+    return -(p*z).sum(dim=1).mean()
 
 def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
-    pred_model = nn.Sequential(model, Predictor().to(device)) # encoder with predictor
-
+    f = encoder # backbone + projection mlp
+    h = Predictor().to(device) # prediction mlp
+    pred_model = nn.Sequential(f, h) # encoder with predictor
+    
     ###
     optimizer = optim.Adam(pred_model.parameters(), weight_decay=1e-6, lr=1e-3)
     lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num, eta_min=1e-5)
@@ -36,14 +39,13 @@ def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_sch
 
         for inputs, _ in pretrain_loader:
             input1, input2 = inputs
-            input1, input2 = input1.to(device), input2.to(device)
+            x1, x2 = input1.to(device), input2.to(device)
 
             optimizer.zero_grad()
-            
-            pred1, pred2 = pred_model(input1), pred_model(input2)
-            targ1, targ2 = model(input2).detach(), model(input1).detach()
+            z1, z2 = f(x1), f(x2)
+            p1, p2 = h(z1), h(z2)
 
-            loss = neg_cos(pred1, targ1)/2 + neg_cos(pred2, targ2)/2
+            loss = D(p1, z2)/2 + D(p2, z1)/2
             loss.backward()
             optimizer.step()
 
@@ -55,7 +57,7 @@ def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_sch
         writer.add_scalar('Loss/train', train_loss, epoch)
 
         # KNN accuracy
-        knn_acc = KNN_acc(model, train_loader, test_loader, device)
+        knn_acc = KNN_acc(f, train_loader, test_loader, device)
         writer.add_scalar('Accuracy/KNN', knn_acc, epoch)
 
         save_log(epoch, epoch_num, train_loss, knn_acc=knn_acc)
