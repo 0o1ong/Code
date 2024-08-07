@@ -6,7 +6,7 @@ import argparse
 from models import get_model, BasicBlock, PreActBlock, BottleNeck
 from datasets import get_data_loaders
 from train import train
-from utils import log_setting, LinearWarmupCosineAnnealingLR
+from utils import log_setting, LinearWarmupCosineAnnealingLR  #, Predictor?
 
 def main():
     parser = argparse.ArgumentParser()
