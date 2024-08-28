@@ -55,7 +55,7 @@ def main():
             target = Module.get_module(target_encoder, None)
         else:
             target = None
-        optimizer = optim.Adam(online.parameters(), weight_decay=1e-6, lr=args.learning_rate)
+        optimizer = optim.AdamW(online.parameters(), weight_decay=0.05, lr=args.learning_rate)
         lr_scheduler = LinearWarmupCosineAnnealingLR(optimizer, warmup_steps=10, total_steps=args.epoch_num)
         train(args.train, online, target, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, args.epoch_num, args.logdir)
     else:
