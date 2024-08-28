@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from .utils import save_log, save_model, KNN_acc
 
-def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num=200, logdir='log_moco'):
+def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
     dim=512
     dict_size=4096
     m=0.99
@@ -76,4 +76,6 @@ def moco(f_q, f_k, train_loader, test_loader, pretrain_loader, optimizer, criter
         if knn_acc > best_knn_acc:
             save_model(knn_acc, f_q, logdir, epoch)
             best_knn_acc = knn_acc
+    
+    #linear_acc(f_q, epoch_num, 512, 10, train_loader, test_loader, device)
     writer.close()
