@@ -38,11 +38,10 @@ class MLP(nn.Module):
         return self.fc(x)
 
 class Module(nn.Module):
-    def __init__(self, backbone, projector, predictor):
+    def __init__(self, encoder, predictor):
         super().__init__()
-        self.backbone = backbone
-        self.projector = projector
+        self.encoder = encoder
         self.predictor = predictor
     
     def get_module(self):
-        return nn.Sequential(self.backbone, self.projector, self.predictor)
+        return nn.Sequential(self.encoder, self.predictor)
