@@ -20,12 +20,12 @@ def mse_loss(x, y):
     return 2 - 2 * (x * y).sum(dim=-1).mean()
 
 def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer, criterion, lr_scheduler, device, epoch_num, logdir):
-    tau=0.99
+    tau_start=0.99
     online = nn.Sequential(backbone, Predictor().to(device)) # add prediction layer
 
     ###
-    optimizer = optim.Adam(online.parameters(), weight_decay=1e-6, lr=1e-3)
-    lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch_num, eta_min=1e-5)
+    optimizer = optim.AdamW(online.parameters(), weight_decay=0.05, lr=1e-3)
+    lr_scheduler = LinearWarmupCosineAnnealingLR(optimizer, warmup_steps=10, total_steps=epoch_num)
     ###
 
     for online_param, target_param in zip(backbone.parameters(), target.parameters()):
@@ -38,6 +38,7 @@ def byol(backbone, target, train_loader, test_loader, pretrain_loader, optimizer
     for epoch in range(epoch_num):
         online.train(True)
         running_loss = 0.0
+        tau = tau_start + (1-tau_start)*(epoch/epoch_num) # 0.99 ~ 1
 
         for inputs, _ in pretrain_loader:
             input1, input2 = inputs
