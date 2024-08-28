@@ -10,8 +10,8 @@ from utils import log_setting, LinearWarmupCosineAnnealingLR, MLP, Module
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=512)
-    parser.add_argument('--learning_rate', type=float, default=2e-3)
+    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--epoch_num', type=int, default=100)
     parser.add_argument('--logdir', type=str, default='cifar10_resnet18_byol')
     parser.add_argument('--model', type=str, default='vit')
