@@ -12,7 +12,7 @@ def NT_Xent(z, temperature, device): # z.size(): (2batch_size, 512)
     target = torch.cat([torch.arange(batch_size)+batch_size, torch.arange(batch_size)]).to(device)
     return F.cross_entropy(cos_sim, target)
 
-def simclr(model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
+def simclr(model, empty_model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
     
     best_knn_acc = 0.0
     writer = SummaryWriter(f'{logdir}')
