@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from .utils import save_log, save_model, KNN_acc
@@ -21,7 +22,7 @@ def D(p, z):
     z = F.normalize(z, dim=1)
     return -(p*z).sum(dim=1).mean()
 
-def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
+def simsiam(encoder, train_loader, test_loader, pretrain_loader, optimizer, lr_scheduler, device, epoch_num, logdir):
     f = encoder # backbone + projection mlp
     h = Predictor().to(device) # prediction mlp
     pred_model = nn.Sequential(f, h) # encoder with predictor
@@ -57,7 +58,7 @@ def simsiam(model, train_loader, test_loader, pretrain_loader, optimizer, lr_sch
         writer.add_scalar('Loss/train', train_loss, epoch)
 
         # KNN accuracy
-        knn_acc = KNN_acc(f, train_loader, test_loader, device)
+        knn_acc = KNN_acc(f, train_loader, test_loader, device)
         writer.add_scalar('Accuracy/KNN', knn_acc, epoch)
 
         save_log(epoch, epoch_num, train_loss, knn_acc=knn_acc)
