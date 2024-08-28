@@ -33,28 +33,26 @@ def main():
     device = torch.device('cuda')
     criterion = nn.CrossEntropyLoss()
     
-    # Predictor -> predict(T/F)
     if args.train in ssl:
         if args.model == 'resnet':
-            backbone = get_model(args.model, PreActBlock, [2, 2, 2, 2], 512).to(device)
+            encoder = get_model(args.model, PreActBlock, [2, 2, 2, 2], 512).to(device)
         elif args.model == 'vit':
-            backbone = get_model(args.model, out_dim=512).to(device)
-        projector = MLP()
+            encoder = get_model(args.model, out_dim=512).to(device)
+
         # Predictor
         if args.train in ['byol', 'sinsiam']:
             predictor = MLP()
         else:
             predictor = None
-        online = Module.get_module(backbone, projector, predictor)
+        online = Module.get_module(encoder, predictor)
 
         # Target network
         if args.train in ['moco', 'byol']:
             if args.model == 'resnet':
-                target_backbone = get_model(args.model, PreActBlock, [2, 2, 2, 2], 512).to(device)
+                target_encoder = get_model(args.model, PreActBlock, [2, 2, 2, 2], 512).to(device)
             elif args.model == 'vit':
-                target_backbone = get_model(args.model, out_dim=512).to(device)
-            target_projector = MLP()
-            target = Module.get_module(target_backbone, target_projector, None)
+                target_encoder = get_model(args.model, out_dim=512).to(device)
+            target = Module.get_module(target_encoder, None)
         else:
             target = None
         optimizer = optim.Adam(online.parameters(), weight_decay=1e-6, lr=args.learning_rate)
