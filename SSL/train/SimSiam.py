@@ -28,6 +28,8 @@ def simsiam(online, empty_target, train_loader, test_loader, pretrain_loader, op
 
             loss = D(p1, z2)/2 + D(p2, z1)/2
             loss.backward()
+
+            # torch.nn.utils.clip_grad_norm_(pred_model.parameters(), max_norm=1.0)
             optimizer.step()
 
             running_loss += loss.item()
