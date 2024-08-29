@@ -43,5 +43,14 @@ class Module(nn.Module):
         self.encoder = encoder
         self.predictor = predictor
     
-    def get_module(self):
-        return nn.Sequential(self.encoder, self.predictor)
+    '''def get_module(self):
+        return nn.Sequential(self.encoder, self.predictor)'''
+    
+    def cal_encoder(self, x):
+        return self.encoder(x)
+    
+    def cal_predictor(self, x):
+        return self.predictor(x)
+    
+    def forward(self, x):
+        return self.cal_predictor(self.cal_encoder(x))
