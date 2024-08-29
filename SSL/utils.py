@@ -38,19 +38,18 @@ class MLP(nn.Module):
         return self.fc(x)
 
 class Module(nn.Module):
-    def __init__(self, encoder, predictor):
+    def __init__(self, encoder, projector, predictor, use_predictor):
         super().__init__()
         self.encoder = encoder
+        self.projector = projector
         self.predictor = predictor
     
-    '''def get_module(self):
-        return nn.Sequential(self.encoder, self.predictor)'''
-    
-    def cal_encoder(self, x):
+    def extract_feature(self, x):
         return self.encoder(x)
     
-    def cal_predictor(self, x):
-        return self.predictor(x)
-    
-    def forward(self, x):
-        return self.cal_predictor(self.cal_encoder(x))
+    def forward(self, x, use_predictor):
+        x = self.encoder(x)
+        x = self.projector(x)
+        if use_predictor:
+            x = self.predictor(x)
+        return x
